@@ -7,7 +7,7 @@
 
   requirejs(['./node_modules/straightcurve/lib/arc2', './node_modules/straightcurve/lib/vector2', './node_modules/straightcurve/lib/vertex2', './node_modules/straightcurve/lib/line2', './node_modules/straightcurve/lib/circle2', './node_modules/straightcurve/lib/line2'], function() {
     return requirejs(['./node_modules/straightcurve/lib/distancer'], function() {
-      var j, line, lines, _i, _len, _results;
+      var j, line, _i, _len, _results;
 
       j = $;
       root.layers = {
@@ -21,8 +21,7 @@
         return typeof currentTool.mousemove === "function" ? currentTool.mousemove(e) : void 0;
       });
       window.currentTool = new NodeTool();
-      new Node(P(100, 200), P(200, 200), P(399), P(350));
-      lines = new Arc2(P(10, 10), P(50, 10), P(200, 100)).segmentize(30);
+      new Node(P(100, 10), P(200, 100), P(110, 50));
       _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
@@ -46,15 +45,11 @@
   };
 
   registerHotkey(49, function() {
-    var currentTool;
-
-    return currentTool = new NodeTool();
+    return window.currentTool = new NodeTool();
   });
 
   registerHotkey(50, function() {
-    var currentTool;
-
-    return currentTool = new BezierTool();
+    return window.currentTool = new BezierTool();
   });
 
   LineTool = (function() {
@@ -152,7 +147,7 @@
         layers.toolLayer.clear();
         line = L(this.p0, P(e));
         layers.toolLayer.drawLine(line);
-        return layers.toolLayer.drawLine(line.perp().grow(10));
+        return layers.toolLayer.drawLine(line.perp().grow(100));
       },
       2: function(e) {}
     };
@@ -213,7 +208,8 @@
   BezierTool = (function() {
     function BezierTool() {
       this.mousemove = __bind(this.mousemove, this);
-      this.click = __bind(this.click, this);      this.p1 = null;
+      this.click = __bind(this.click, this);      this.node = null;
+      this.p1 = null;
       this.p2 = null;
       this.p3 = null;
       this.p4 = null;
@@ -228,13 +224,12 @@
 
     BezierTool.prototype.clickSteps = {
       0: function(e) {
-        this.p0 = P(e);
-        return this.step++;
+        if (this.node != null) {
+          this.step++;
+        }
+        return console.log(this.node);
       },
-      1: function(e) {
-        this.p1 = P(e);
-        return this.step++;
-      },
+      1: function(e) {},
       2: function(e) {
         this.p2 = P(e);
         return this.step++;
@@ -256,10 +251,41 @@
     };
 
     BezierTool.prototype.mousemoveSteps = {
-      0: function(e) {},
+      0: function(e) {
+        var foundNode, p, x, y, _i, _j, _ref, _ref1, _ref2, _ref3;
+
+        p = P(e);
+        foundNode = false;
+        for (x = _i = _ref = p.x - 5, _ref1 = p.x + 5; _ref <= _ref1 ? _i < _ref1 : _i > _ref1; x = _ref <= _ref1 ? ++_i : --_i) {
+          if (nodes[x] != null) {
+            for (y = _j = _ref2 = p.y - 5, _ref3 = p.y + 5; _ref2 <= _ref3 ? _j < _ref3 : _j > _ref3; y = _ref2 <= _ref3 ? ++_j : --_j) {
+              this.node = nodes[x][y];
+              if (this.node != null) {
+                this.node.highLight();
+                foundNode = true;
+                break;
+              }
+            }
+          }
+          if (foundNode) {
+            break;
+          }
+        }
+        if (!foundNode) {
+          layers.toolLayer.clear();
+          return this.node = null;
+        }
+      },
       1: function(e) {
         layers.toolLayer.clear();
-        return layers.toolLayer.drawLine(L(this.p0, P(e)));
+        this.node.highLight();
+        layers.toolLayer.drawBeizer({
+          p0: this.node.perp.p0,
+          p1: this.node.perp.p1,
+          p2: this.node.perp.p1,
+          p3: P(e)
+        });
+        return layers.toolLayer.drawDot(this.node.perp.p1);
       },
       2: function(e) {
         layers.toolLayer.clear();
@@ -316,12 +342,27 @@
       this.ctx.beginPath();
       this.ctx.moveTo(beizer.p0.x, beizer.p0.y);
       this.ctx.bezierCurveTo(beizer.p1.x, beizer.p1.y, beizer.p2.x, beizer.p2.y, beizer.p3.x, beizer.p3.y);
-      return this.ctx.stroke();
+      this.ctx.stroke();
+      this.drawNode(beizer.p1);
+      return this.drawNode(beizer.p2);
     };
 
-    Layer.prototype.drawRect = function(rect) {
+    Layer.prototype.drawDot = function(point) {
+      this.ctx.fillStyle = "#FFCC33";
+      this.ctx.fillRect(point.x + 1, point.y + 1, 3, 3);
+      return this.ctx.fillStyle = "black";
+    };
+
+    Layer.prototype.drawNode = function(rect, highLight) {
+      if (highLight == null) {
+        highLight = false;
+      }
       this.ctx.fillStyle = "blue";
-      this.ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      if (highLight) {
+        this.ctx.fillRect(rect.x - 2, rect.y - 2, rect.w + 4, rect.h + 4);
+      } else {
+        this.ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      }
       this.ctx.fillStyle = "red";
       this.ctx.fillRect(rect.x + 2, rect.y + 2, rect.w - 4, rect.h - 4);
       return this.ctx.fillStyle = "black";
@@ -335,27 +376,38 @@
 
   Node = (function() {
     function Node(p0, p1, p2) {
+      var x, y;
+
       this.p0 = p0;
       this.p1 = p1;
       this.p2 = p2;
       console.log("Herp");
       this.line = L(this.p0, this.p1);
       this.perp = this.line.perp();
-      this.x = this.perp.p0.x;
-      this.y = this.perp.p0.y;
+      this.x = x = this.perp.p0.x;
+      this.y = y = this.perp.p0.y;
       layers.main.drawLine(this.line);
-      layers.main.drawLine(this.perp.grow(10));
-      layers.main.drawRect({
+      layers.main.drawLine(this.perp.grow(this.perp.distance(this.p2)));
+      layers.main.drawNode({
         x: this.perp.p0.x - 3,
         y: this.perp.p0.y - 3,
         w: 6,
         h: 6
       });
       if (nodes[x] == null) {
-        nodes[x] = [];
+        root.nodes[x] = [];
       }
-      nodes[x][y] = this;
+      root.nodes[x][y] = this;
     }
+
+    Node.prototype.highLight = function() {
+      return layers.toolLayer.drawNode({
+        x: this.perp.p0.x - 3,
+        y: this.perp.p0.y - 3,
+        w: 6,
+        h: 6
+      }, true);
+    };
 
     return Node;
 

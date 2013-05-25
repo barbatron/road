@@ -14,8 +14,7 @@ requirejs ['./node_modules/straightcurve/lib/arc2',
     j("#mouseTrap").click (e) -> currentTool.click?(e)
     j("#mouseTrap").mousemove (e) -> currentTool.mousemove?(e)
     window.currentTool = new NodeTool()
-    new Node(P(100,200),P(200,200),P(399),P(350))
-    lines = new Arc2(P(10,10),P(50,10),P(200,100)).segmentize(30)
+    new Node(P(100,10),P(200,100),P(110,50))
     layers.main.drawLine line for line in lines
 
 
@@ -26,8 +25,8 @@ $(window).keypress (e) ->
 registerHotkey = (key, func) ->
   hotkeys[key] = func
 
-registerHotkey 49, -> currentTool = new NodeTool() # 1
-registerHotkey 50, -> currentTool = new BezierTool() # 2
+registerHotkey 49, -> window.currentTool = new NodeTool() # 1
+registerHotkey 50, -> window.currentTool = new BezierTool() # 2
 
 class LineTool
   constructor: () ->
@@ -78,7 +77,7 @@ class NodeTool
       layers.toolLayer.clear()
       line = L(@p0, P(e))
       layers.toolLayer.drawLine line
-      layers.toolLayer.drawLine line.perp().grow 10
+      layers.toolLayer.drawLine line.perp().grow 100
     2: (e) ->
 
 class ArcTool
@@ -108,6 +107,7 @@ class ArcTool
 
 class BezierTool
   constructor: () ->
+    @node=null
     @p1=null
     @p2=null
     @p3=null
@@ -117,11 +117,9 @@ class BezierTool
     @clickSteps[@step]?.call(this,e)
   clickSteps:    
     0: (e) ->
-      @p0 = P(e)
-      @step++
+      @step++ if @node?
+      console.log @node
     1: (e) ->
-      @p1 = P(e)
-      @step++
     2: (e) ->
       @p2 = P(e)
       @step++
@@ -136,9 +134,33 @@ class BezierTool
     @mousemoveSteps[@step]?.call(this,e)
   mousemoveSteps:
     0: (e) ->
+      p = P(e)
+      foundNode = false
+      for x in [p.x-5...p.x+5]
+        if nodes[x]?
+          for y in [p.y-5...p.y+5]
+            @node = nodes[x][y]
+            if @node?
+              @node.highLight()
+              foundNode = true
+              break
+        break if foundNode
+
+      unless foundNode
+        layers.toolLayer.clear() 
+        @node = null
+
     1: (e) ->
       layers.toolLayer.clear()
-      layers.toolLayer.drawLine L(@p0, P(e))
+      @node.highLight()
+      layers.toolLayer.drawBeizer {
+        p0: @node.perp.p0
+        p1: @node.perp.p1
+        p2: @node.perp.p1
+        p3: P(e)
+      }
+      layers.toolLayer.drawDot @node.perp.p1
+
     2: (e) ->
       layers.toolLayer.clear()
       layers.toolLayer.drawArc new Arc2(@p0,P(e),@p1)
@@ -178,9 +200,19 @@ class Layer
       beizer.p3.y
     )
     @ctx.stroke()
-  drawRect: (rect) ->
+    @drawNode beizer.p1
+    @drawNode beizer.p2
+  drawDot: (point) ->
+    @ctx.fillStyle = "#FFCC33"
+    @ctx.fillRect(point.x+1, point.y+1, 3, 3)
+    @ctx.fillStyle = "black"
+    
+  drawNode: (rect, highLight = false) ->
     @ctx.fillStyle = "blue"
-    @ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
+    if highLight
+      @ctx.fillRect(rect.x-2, rect.y-2, rect.w+4, rect.h+4)      
+    else
+      @ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
     @ctx.fillStyle = "red"
     @ctx.fillRect(rect.x+2, rect.y+2, rect.w-4, rect.h-4)
     @ctx.fillStyle = "black"
@@ -193,19 +225,25 @@ class Node
     console.log "Herp"
     @line = L(@p0, @p1)
     @perp = @line.perp()
-    @x = @perp.p0.x
-    @y = @perp.p0.y
+    @x = x = @perp.p0.x
+    @y = y = @perp.p0.y
     layers.main.drawLine @line
-    layers.main.drawLine @perp.grow 10
-    layers.main.drawRect
+    layers.main.drawLine @perp.grow @perp.distance(@p2)
+    layers.main.drawNode
       x: @perp.p0.x - 3
       y: @perp.p0.y - 3
       w: 6
       h: 6
-    nodes[x] = [] unless nodes[x]?
-    nodes[x][y] = this
-
-
+    root.nodes[x] = [] unless nodes[x]?
+    root.nodes[x][y] = this
+  highLight: -> 
+    layers.toolLayer.drawNode
+      x: @perp.p0.x - 3
+      y: @perp.p0.y - 3
+      w: 6
+      h: 6
+    , true
+      
   
 
 
