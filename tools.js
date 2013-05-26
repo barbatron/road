@@ -76,10 +76,10 @@
     };
 
     RoadTool.prototype.over = function(ent) {
-      layers.tool.clear();
-      layers.tool.drawNode(this.node, true);
-      layers.tool.drawBeizer(this.bezier(ent.pos));
       if (ent instanceof ents.Node) {
+        layers.tool.clear();
+        layers.tool.drawNode(this.node, true);
+        layers.tool.drawBeizer(this.bezier(ent.pos));
         return this.endNode = ent;
       }
     };

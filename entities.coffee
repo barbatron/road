@@ -3,9 +3,7 @@ root = this
 class Node
   constructor: (@pos, @target) ->
     @line = L(@target, @pos)
-    console.log @line
-    @ctrl = @line.growAdd(50).p1
-    
+    @ctrl = @line.growAdd(50).p1    
     root.nodes[@pos.x] = [] unless nodes[@pos.x]?
     root.nodes[@pos.x][@pos.y] = this
     layers.node.drawNode(@)
@@ -22,4 +20,4 @@ class Node
 
 root.ents = {}
 root.ents.Node = Node
-
+root.nodes = []

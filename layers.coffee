@@ -61,9 +61,7 @@ class Layer
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)
     c.attr("fill", "#555");
-    c.mouseover => 
-      console.log "hej bajs"
-      node.over()
+    c.mouseover => node.over()
     c.mouseout => node.out()
     
   drawImpasse: (pos) ->
@@ -75,6 +73,3 @@ class Layer
 root.layers = {}
 for layer in ['main','node','tool','nodeSnap']
   root.layers[layer] = new Layer(layer)
-
-console.log "layer", root.layers
-

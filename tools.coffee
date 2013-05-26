@@ -36,10 +36,10 @@ class RoadTool extends Tool
       p3: end
     }
   over: (ent) ->
-    layers.tool.clear()
-    layers.tool.drawNode @node, true
-    layers.tool.drawBeizer @bezier ent.pos
     if ent instanceof ents.Node
+      layers.tool.clear()
+      layers.tool.drawNode @node, true
+      layers.tool.drawBeizer @bezier ent.pos
       @endNode = ent
   out: (ent) ->
     if ent instanceof ents.Node

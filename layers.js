@@ -90,7 +90,6 @@
       c = this.ctx.circle(node.pos.x, node.pos.y, 10);
       c.attr("fill", "#555");
       c.mouseover(function() {
-        console.log("hej bajs");
         return node.over();
       });
       return c.mouseout(function() {
@@ -117,8 +116,6 @@
     layer = _ref[_i];
     root.layers[layer] = new Layer(layer);
   }
-
-  console.log("layer", root.layers);
 
 }).call(this);
 

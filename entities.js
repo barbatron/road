@@ -9,7 +9,6 @@
       this.pos = pos;
       this.target = target;
       this.line = L(this.target, this.pos);
-      console.log(this.line);
       this.ctrl = this.line.growAdd(50).p1;
       if (nodes[this.pos.x] == null) {
         root.nodes[this.pos.x] = [];
@@ -46,6 +45,8 @@
   root.ents = {};
 
   root.ents.Node = Node;
+
+  root.nodes = [];
 
 }).call(this);
 
