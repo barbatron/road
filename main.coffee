@@ -5,23 +5,22 @@ requirejs ['./node_modules/straightcurve/lib/arc2',
            './node_modules/straightcurve/lib/vertex2',
            './node_modules/straightcurve/lib/line2',
            './node_modules/straightcurve/lib/circle2',
-           './node_modules/straightcurve/lib/line2'], ->
-  requirejs ['./node_modules/straightcurve/lib/distancer'], ->
+           './node_modules/straightcurve/lib/line2'
+           ], ->
+  requirejs ['./node_modules/straightcurve/lib/distancer', 'raphael'], (a, Raphael)->
     j = $
     root.layers =
       main: new Layer('main')
+      node: new Layer('node')
       tool: new Layer('tool')
     width = $('body').width()
     height = $('body').height()
 
-    j("body").append $('<div id="mouseTrap" style="border:1px solid #aaa; background-color:rgba(0,0,0,0);    position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;      width: '+width+'; height: '+height+';"></div>')
+    j("body").append $('<div id="mouseTrap" style="border:1px solid #aaa; background-color:rgba(0,0,0,0);    position: absolute; left: 0; top: 0; bottom: 0; z-index: 111;      width: 10000px; height: 10000px;"></div>')
     j("#mouseTrap").click (e) -> currentTool.click?(e)
     j("#mouseTrap").mousemove (e) -> currentTool.mousemove?(e)
     j("#mouseTrap").mousedown (e) -> currentTool.mousedown?(e)
-
-    window.currentTool = new RoadTool()
-        
-
+    window.currentTool = new NodeTool()
     ##Debug stuff goes here
     #new Node(P(100,10),P(100,80),P(110,150))
     #new Node(P(151,194),P(115,198),P(150,150))
@@ -75,7 +74,7 @@ class LineTool
 
 class RoadTool
   constructor: () ->
-    @road = new Road()
+    @p1=null
     @step=0
     @mousePressed = false
   click: (e) =>
@@ -89,33 +88,35 @@ class RoadTool
     @mousemoveSteps[@step]?.call(this,e)
   mousemoveSteps:
     0: (e) ->
-      if @mousePressed
-        @road.turnTo V(e)
-      else
-        @road.setCenter(P(e))
       layers.tool.clear()
       @road.draw(layers.tool.ctx)
-      #layers.tool.drawRoad(P(e))
     1: (e) ->
+      layers.tool.clear()
+      @road.draw(layers.tool.ctx)
     2: (e) ->
 
-class Road
-  constructor: () ->
-    @center = new Vector2(0,0)
-  setCenter: (pnt) ->
-    @center = new Vector2(pnt.x, pnt.y)
-  turnTo: (v) ->
-    @ang = @center.signedAngle v
-    console.log "ang", @ang
-  draw: (ctx) ->
-    if @ang?
-      ctx.rotate(@ang)
-      #ctx.translate(@center.x,@center.y)
-    ctx.fillStyle = "gray"
-    ctx.fillRect(@center.x-4, @center.y-16, 8, 32)
-    ctx.fillStyle = "black"
-    ctx.rotate(0)
-    ctx.translate(0,0)
+findNode = (e) ->
+  p = P(e)
+  node = null
+  foundNode = false
+  for x in [p.x-5...p.x+5]
+    if nodes[x]?
+      for y in [p.y-5...p.y+5]
+        node = nodes[x][y]
+        if node?
+          foundNode = true
+          break
+    break if foundNode
+  return node
+
+###
+redrawNodes = () ->
+  layers.node.clear()
+  for nodeY in nodes
+    if nodeY?
+      for node in nodeY
+        node?.draw?()   
+###
 
 class NodeTool
   constructor: () ->
@@ -124,29 +125,52 @@ class NodeTool
     @step=0
   click: (e) =>
     @clickSteps[@step]?.call(this,e)
-    @step++
-  clickSteps:    
+  clickSteps:
     0: (e) ->
-      @p0 = P(e)
+      if @node?
+        window.currentTool = new BezierTool(@node)
+      else
+        @p0 = P(e)
+        @step++
     1: (e) ->
-      @p1 = P(e)
-    2: (e) ->
-      new Node(@p0, @p1, P(e))
+      new Edge(@p0, P(e))
       window.currentTool = new NodeTool()
   mousemove: (e) =>
     @mousemoveSteps[@step]?.call(this,e)
   mousemoveSteps:
     0: (e) ->
+      layers.tool.clear() 
+      @node = findNode(e)
+      if @node?
+        layers.tool.drawNode(@node, true)
+      else  
+        layers.tool.drawImpasse(P(e))
     1: (e) ->
-      layers.tool.clear()
       line = L(@p0, P(e))
-      layers.tool.drawLine line
-    2: (e) ->
       layers.tool.clear()
-      line = L(@p0, @p1)
-      perp = line.perp()
-      layers.tool.drawLine line
-      layers.tool.drawLine perp.grow perp.p0.distance(P(e))
+      layers.tool.drawRoad line
+      layers.tool.drawImpasse(@p0)
+
+class Edge
+  constructor: (@p0, @p1) ->
+    @n0 = new Node(@p0, @p1)
+    @n1 = new Node(@p1, @p0)
+    @line = L(@p0, @p1)
+    @draw()
+  draw: () ->
+    layers.main.drawRoad @line
+    layers.main.drawImpasse(@p0)
+
+class Node
+  constructor: (@pos, @target) ->
+    @line = L(@target, @pos)
+    @ctrl = @line.growAdd(50).p1
+    
+    root.nodes[@pos.x] = [] unless nodes[@pos.x]?
+    root.nodes[@pos.x][@pos.y] = this
+    layers.node.drawNode(@)
+  
+      
 
 class ArcTool
   constructor: () ->
@@ -174,20 +198,22 @@ class ArcTool
       layers.tool.drawArc new Arc2(@p1,P(e),@p2)
 
 class BezierTool
-  constructor: () ->
-    @node=null
+  constructor: (@node = null) ->
     @p1=null
     @p2=null
     @p3=null
     @p4=null
-    @step=0
+    unless @node? then @step=0 else @step=1
   click: (e) =>
     @clickSteps[@step]?.call(this,e)
   clickSteps:    
     0: (e) ->
       @step++ if @node?
-      console.log @node
     1: (e) ->
+      bezier = @bezier e 
+      layers.main.drawBeizer bezier
+      node = new Node bezier.p3, bezier.p2
+      window.currentTool = new BezierTool(node)
     2: (e) ->
       @p2 = P(e)
       @step++
@@ -214,7 +240,21 @@ class BezierTool
             break
       break if foundNode
     return node
-
+  bezier: (e)->
+    sta = @node.pos
+    end = P(e)
+    mid = @node.line.growAdd(100).p1
+    starg = @node.ctrl
+    etarg = P(end.x+((mid.x-end.x)/2), end.y+((mid.y-end.y)/2))
+    layers.tool.drawDot starg, "#0F0"
+    layers.tool.drawDot mid
+    layers.tool.drawDot etarg, "#F0F"
+    return {
+      p0: sta
+      p1: starg
+      p2: etarg
+      p3: end
+    }
   mousemoveSteps:
     0: (e) ->
       p = P(e)
@@ -230,7 +270,7 @@ class BezierTool
         break if foundNode
 
       unless foundNode
-        layers.tool.clear() 
+        layers.tool.clear()
         @node = null
 
     1: (e) ->
@@ -239,25 +279,19 @@ class BezierTool
         if node?
           @node2 = node
           layers.tool.clear()
-          @node.highLight()
-          @node2.highLight()
+          layers.tool.drawNode(@node, true)
+          layers.tool.drawNode(@node2, true)
           layers.tool.drawBeizer {
             p0: @node.perp.p0
             p1: @node.perp.p1
             p2: @node2.perp.p1
             p3: @node2.perp.p0
           }
-          return        
+          return
       
       layers.tool.clear()
-      @node.highLight()
-      layers.tool.drawBeizer {
-        p0: @node.perp.p0
-        p1: @node.perp.p1
-        p2: @node.perp.p1
-        p3: P(e)
-      }
-      layers.tool.drawDot @node.perp.p1
+      layers.tool.drawNode(@node, true)
+      layers.tool.drawBeizer @bezier e
 
     2: (e) ->
       layers.tool.clear()
@@ -265,92 +299,79 @@ class BezierTool
     3: (e) ->
       layers.tool.clear()
       layers.tool.drawBeizer {
-        p0: @p0
+        p0: @pos
         p1: P(e)
         p2: @p2
         p3: @p1
       }
       currentTool = new BezierTool()
 
+zIndex = 0
 class Layer
   constructor: (id) ->
     @w = width = $('body').width()#.replace "px",""
     @h = height = $('body').height()#.replace "px",""
-    $('body').append $('<canvas id="'+id+'" width='+width+' height='+height+'	style="border:1px solid #aaa; background-color:rgba(0,0,0,0); 	position: absolute; left: 0; top: 0; z-index: 0;"></canvas>')
-    @ctx = document.getElementById(id).getContext('2d')
+    div = $("<div id='#{id}'></div>")
+    div.css
+      "border": "1px solid #aaa"
+      "background-color": "rgba(0,0,0,0)"
+      "position": "absolute"
+      "left: 0"
+      "top: 0"
+      "z-index": zIndex++
+      "width": width + "px"
+      "height": height + "px"
+    $('body').append div
+    @ctx = new Raphael(id, 10000, 10000)
+    #@ctx.setViewBox 0, 0, setViewBox, @h, false
     @clear()
   clear: ->
-    @ctx.clearRect 0,0,@w,@h
+    @ctx.clear()
   drawLine: (line) ->
-    @ctx.beginPath()
-    @ctx.moveTo(line.p0.x,line.p0.y)
-    @ctx.lineTo(line.p1.x,line.p1.y)
-    @ctx.stroke()
+    @ctx.path("M #{line.p0.x} #{line.p0.y} L #{line.p1.x} #{line.p1.y}")
   drawArc: (arc) ->
     lines = arc.segmentize(30)
     @drawLine line for line in lines
   drawBeizer: (beizer) ->
-    @ctx.beginPath()
-    @ctx.moveTo(beizer.p0.x,beizer.p0.y)
-    @ctx.bezierCurveTo(
-      beizer.p1.x,
-      beizer.p1.y,
-      beizer.p2.x,
-      beizer.p2.y,
-      beizer.p3.x,
-      beizer.p3.y
-    )
-    @ctx.stroke()
-    @drawNode beizer.p1
-    @drawNode beizer.p2
-  drawDot: (point) ->
-    @ctx.fillStyle = "#FFCC33"
-    @ctx.fillRect(point.x+1, point.y+1, 3, 3)
-    @ctx.fillStyle = "black"
+    c = @ctx.path """M #{beizer.p0.x} #{beizer.p0.y}
+      C #{beizer.p1.x}
+      #{beizer.p1.y}
+      #{beizer.p2.x}
+      #{beizer.p2.y}
+      #{beizer.p3.x}
+      #{beizer.p3.y}
+      """
+    c.attr "stroke-width", "9"
+    c.attr("stroke", "#eee")
+  
+  drawDot: (pos, color="#505") ->
+    c = @ctx.circle(pos.x, pos.y, 4)
+    c.attr("fill", color);
     
-  drawNode: (rect, highLight = false) ->
-    @ctx.fillStyle = "blue"
-    if highLight
-      @ctx.fillRect(rect.x-2, rect.y-2, rect.w+4, rect.h+4)      
-    else
-      @ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
-    @ctx.fillStyle = "red"
-    @ctx.fillRect(rect.x+2, rect.y+2, rect.w-4, rect.h-4)
-    @ctx.fillStyle = "black"
+  drawRoad: (line) ->
+    c = @ctx.path("M#{line.p0.x} #{line.p0.y} L#{line.p1.x} #{line.p1.y} ");
+    c.attr "stroke-width", "9"
+    c.attr("stroke", "#eee");
 
-  drawRoad: (pos, ang = 0) ->
-    @ctx.rotate(ang)
-    @ctx.fillStyle = "gray"
-    @ctx.fillRect(pos.x-4, pos.y-16, 8, 32)
-    @ctx.fillStyle = "black"
-    @ctx.rotate(0)
+  drawNode: (node, large = false) ->
+    if large
+      c = @ctx.circle(node.pos.x, node.pos.y, 8)
+    else
+      c = @ctx.circle(node.pos.x, node.pos.y, 4)
+    c.attr("fill", "#500")
+    c.attr("stroke", "#eee")
+    t = @ctx.circle(node.ctrl.x, node.ctrl.y, 10)
+    t.attr("fill", "#500")
+    t.attr("stroke", "#eee")
+    
+
+  drawImpasse: (pos) ->
+    c = @ctx.circle(pos.x, pos.y, 10)
+    c.attr("fill", "#555");
+    c.attr("stroke", "#999");
 
 root.nodes = []
 
-class Node
-  constructor: (@p0, @p1, @p2) ->
-    console.log "Herp"
-    @line = L(@p0, @p1)
-    @perp = @line.perp()
-    @x = x = Math.floor @perp.p0.x
-    @y = y = Math.floor @perp.p0.y
-    layers.main.drawLine @line
-    layers.main.drawLine @perp.grow Math.max(@perp.distance(@p2), @line.length())
-    layers.main.drawNode
-      x: @perp.p0.x - 3
-      y: @perp.p0.y - 3
-      w: 6
-      h: 6
-    root.nodes[x] = [] unless nodes[x]?
-    root.nodes[x][y] = this
-  highLight: -> 
-    layers.tool.drawNode
-      x: @perp.p0.x - 3
-      y: @perp.p0.y - 3
-      w: 6
-      h: 6
-    , true
-      
   
 
 
