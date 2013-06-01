@@ -26,9 +26,9 @@ class Layer
   drawLine: (line) ->
     c = @ctx.path("M #{line.p0.x} #{line.p0.y} L #{line.p1.x} #{line.p1.y}")
     c.attr("stroke", "#eee")
-    c.attr "stroke-width", "9"
+    c.attr "stroke-width", "2"
     
-  drawBeizer: (beizer) ->
+  drawBeizer: (beizer, color="#777") ->
     c = @ctx.path """
       M #{beizer.p0.x} #{beizer.p0.y}
       C #{beizer.p1.x} #{beizer.p1.y}
@@ -36,7 +36,7 @@ class Layer
         #{beizer.p3.x} #{beizer.p3.y}
       """
     c.attr "stroke-width", "9"
-    c.attr("stroke", "#eee")
+    c.attr("stroke", color)
     
   drawDot: (pos, color="#505") ->
     c = @ctx.circle(pos.x, pos.y, 4)
@@ -49,9 +49,10 @@ class Layer
     
   drawNode: (node, large = false) ->
     if large
-      c = @ctx.circle(node.pos.x, node.pos.y, 8)
-    else
       c = @ctx.circle(node.pos.x, node.pos.y, 4)
+    else
+      c = @ctx.circle(node.pos.x, node.pos.y, 2)
+    c.attr "stroke-width", "1"
     c.attr("fill", "#500")
     c.attr("stroke", "#eee")
     t = @ctx.circle(node.ctrl.x, node.ctrl.y, 1)
@@ -60,16 +61,24 @@ class Layer
     
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)
-    c.attr("fill", "#555");
+    c.attr("fill", "rgba(0,0,0,0)");
     c.mouseover => node.over()
     c.mouseout => node.out()
     
   drawImpasse: (pos) ->
-    c = @ctx.circle(pos.x, pos.y, 10)
-    c.attr("fill", "#555");
-    c.attr("stroke", "#999");
+    c = @ctx.circle(pos.x, pos.y, 1)
+    c.attr("fill", "#555")
+    c.attr("stroke", "#999")
 
 
 root.layers = {}
 for layer in ['main','node','tool','nodeSnap']
   root.layers[layer] = new Layer(layer)
+
+class PaperLayer
+  constructor: (id)->
+    div = $("<canvas id='#{id}'></canvas>")
+    $('body').append div
+    paper.setup(id)
+
+new PaperLayer ('papa')

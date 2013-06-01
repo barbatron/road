@@ -42,37 +42,31 @@
     }
 
     RoadTool.prototype.click = function(e) {
-      var bezier, end;
-
-      if (this.endNode != null) {
-        end = this.endNode.pos;
-      } else {
-        end = P(e);
+      if (this.curve != null) {
+        layers.main.drawBeizer(this.curve);
+        this.endNode = new ents.Node(this.curve.p3, this.curve.p2);
+        return tools.current = new RoadTool(this.endNode);
       }
-      bezier = this.bezier(end);
-      layers.main.drawBeizer(bezier);
-      if (this.endNode == null) {
-        this.endNode = new ents.Node(bezier.p3, bezier.p2);
-      }
-      return tools.current = new RoadTool(this.endNode);
     };
 
     RoadTool.prototype.bezier = function(end) {
-      var etarg, mid, sta, starg;
+      var etarg, mid, perp, sta, starg;
 
       sta = this.node.pos;
-      mid = this.node.line.growAdd(100).p1;
-      starg = this.node.ctrl;
-      etarg = V(end.x + ((mid.x - end.x) / 2), end.y + ((mid.y - end.y) / 2));
+      starg = this.node.line.growAdd(L(sta, end).length() / 2.5).p1;
+      mid = this.node.pos.add(end).div(2);
+      perp = L(this.node.pos, end).perp().growAll(1000);
+      etarg = starg.mirror(perp);
       layers.tool.drawDot(starg, "#0F0");
-      layers.tool.drawDot(mid);
+      layers.tool.drawDot(mid, "#00F");
+      layers.tool.drawLine(perp, "#0FF");
       layers.tool.drawDot(etarg, "#F0F");
-      return {
+      return C({
         p0: sta,
         p1: starg,
         p2: etarg,
         p3: end
-      };
+      });
     };
 
     RoadTool.prototype.over = function(ent) {
@@ -91,10 +85,27 @@
     };
 
     RoadTool.prototype.move = function(e) {
+      var angle, color, curve, green, len, steepness;
+
       if (this.endNode == null) {
         layers.tool.clear();
         layers.tool.drawNode(this.node, true);
-        return layers.tool.drawBeizer(this.bezier(P(e)));
+        curve = this.bezier(P(e));
+        angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
+        len = curveLen(curve);
+        if (angle > Math.PI / 2) {
+          steepness = 255;
+          color = "#333";
+        } else {
+          steepness = Math.max(0, ((0.028 - (angle / len)) * 20) - .30);
+          green = 1 - steepness;
+          color = "hsb(" + steepness + ", 0.9, 0.5)";
+          this.curve = curve;
+        }
+        console.log(angle, steepness, len);
+        if (this.curve != null) {
+          return layers.tool.drawBeizer(this.curve, color);
+        }
       }
     };
 
@@ -176,7 +187,3 @@
   root.tools.RoadTool = RoadTool;
 
 }).call(this);
-
-/*
-//@ sourceMappingURL=tools.map
-*/

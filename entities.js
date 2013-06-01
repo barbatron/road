@@ -49,7 +49,3 @@
   root.nodes = [];
 
 }).call(this);
-
-/*
-//@ sourceMappingURL=entities.map
-*/

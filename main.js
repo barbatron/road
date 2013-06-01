@@ -5,8 +5,8 @@
   root = this;
 
   req = {
-    0: ['./node_modules/straightcurve/lib/arc2', './node_modules/straightcurve/lib/vector2', './node_modules/straightcurve/lib/vertex2', './node_modules/straightcurve/lib/line2', './node_modules/straightcurve/lib/circle2', './node_modules/straightcurve/lib/line2', 'tools', 'entities'],
-    1: ['./node_modules/straightcurve/lib/distancer', 'raphael'],
+    0: ['geometry', 'paper', 'tools', 'entities'],
+    1: ['raphael'],
     2: ['layers']
   };
 
