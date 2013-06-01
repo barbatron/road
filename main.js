@@ -25,8 +25,14 @@
 
           return typeof (_base = tools.current).move === "function" ? _base.move(e) : void 0;
         });
+        $(window).keydown(function(e) {
+          var _base;
+
+          return typeof (_base = tools.current).keyDown === "function" ? _base.keyDown(e) : void 0;
+        });
         new ents.Node(P(100, 80), P(100, 10));
-        return new ents.Node(P(151, 194), P(115, 198));
+        new ents.Node(P(151, 194), P(115, 198));
+        return new tools.CommonTool();
       });
     });
   });
@@ -44,20 +50,8 @@
     return hotkeys[key] = func;
   };
 
-  registerHotkey(49, function() {
-    return window.currentTool = new NodeTool();
-  });
-
-  registerHotkey(50, function() {
-    return window.currentTool = new BezierTool();
-  });
-
   registerHotkey(113, function() {
-    return window.currentTool = new NodeTool();
+    return new tools.CommonTool();
   });
 
 }).call(this);
-
-/*
-//@ sourceMappingURL=main.map
-*/

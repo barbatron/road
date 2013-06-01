@@ -8,6 +8,8 @@ class Tool
 
 class CommonTool extends Tool
   constructor: () ->
+    super()
+    layers.tool.clear()
   over: (ent) ->
     if ent instanceof ents.Node
       new RoadTool ent
@@ -21,22 +23,7 @@ class RoadTool extends Tool
       layers.main.drawBeizer @curve
       @endNode = new ents.Node @curve.p3, @curve.p2# unless @endNode?
       tools.current = new RoadTool(@endNode)
-  bezier: (end)->
-    sta = @node.pos
-    starg = @node.line.growAdd(L(sta,end).length()/2.5).p1
-    mid = @node.pos.add(end).div(2)
-    perp = L(@node.pos, end).perp().growAll(1000)#@node.pos.add(end).div(2))#line.growAdd(100)
-    etarg = starg.mirror(perp)#V(end.x+((mid.x-end.x)/2), end.y+((mid.y-end.y)/2))
-    layers.tool.drawDot starg, "#0F0"
-    layers.tool.drawDot mid, "#00F"
-    layers.tool.drawLine perp, "#0FF"
-    layers.tool.drawDot etarg, "#F0F"
-    return C({
-      p0: sta
-      p1: starg
-      p2: etarg
-      p3: end
-    })
+
   over: (ent) ->
     if ent instanceof ents.Node
       layers.tool.clear()
@@ -50,21 +37,59 @@ class RoadTool extends Tool
     unless @endNode?
       layers.tool.clear()
       layers.tool.drawNode @node, true
-      curve = @bezier P(e)
+      curve = C.fromNode @node, P(e)
+
       angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
+
       len = curveLen curve
-      if angle > Math.PI / 2
-        steepness = 255
+      rad = (len*((2*Math.PI)/angle))/(2*Math.PI)
+      #steepness = Math.max 0, ((0.028-(angle/len))*20)-.30
+      color = "#333"
+      if angle > Math.PI/2
+        new SharpTurnTool(@node)
+      else if rad < 15 or L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
         color = "#333"
       else
-        steepness = Math.max 0, ((0.028-(angle/len))*20)-.30
-        green = 1 - steepness
-        color = "hsb(#{steepness}, 0.9, 0.5)"
+        hue = 0
+        for k,v of root.colorSpeed
+          hue = Math.max v, hue if rad > new Number(k)
+        color = "hsb(#{hue}, 0.9, 0.5)"
         @curve = curve
-      console.log angle, steepness, len
+      console.log angle, len, rad, color
       layers.tool.drawBeizer @curve, color if @curve?
   keyDown: (e) ->
     tools.current = new StraightRoadTool(@node) if e.which is 17
+
+root.colorSpeed =
+  15:	 0
+  30:	 0.05
+  55:	 0.10
+  90:	 0.15
+  135: 0.20
+  195: 0.25
+  250: 0.30
+  335: 0.35
+  435: 0.40
+  560: 0.45
+  755: 0.50
+
+class SharpTurnTool extends Tool
+  constructor: (@node) ->
+    super()
+  click: (e) ->
+    if @line?
+      layers.main.drawStraightRoad(@line)
+      new RoadTool(new ents.Node(@line.p1, @line.p0))
+  move: (e) ->
+    curve = C.fromNode @node, P(e)
+    angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
+    console.log "angle", angle
+    if angle <= Math.PI/2
+      unless  L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
+        new RoadTool(@node)
+    @line = L(@node.pos, P(e))
+    layers.tool.clear()
+    layers.tool.drawStraightRoad(@line)
 
 
 class StraightRoadTool extends Tool
@@ -96,6 +121,6 @@ class StraightRoadTool extends Tool
 
 
 root.tools = {}
-root.tools.current = new CommonTool()
 root.tools.RoadTool = RoadTool
+root.tools.CommonTool = CommonTool
 

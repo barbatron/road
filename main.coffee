@@ -51,10 +51,13 @@ r req[0], ->
 
     $("#nodeSnap").click (e) -> tools.current.click?(e)
     $("#nodeSnap").mousemove (e) -> tools.current.move?(e)
+    $(window).keydown (e) -> tools.current.keyDown?(e)
 
     # Debug stuff goes here
     new ents.Node(P(100,80),P(100,10))
     new ents.Node(P(151,194),P(115,198))
+
+    new tools.CommonTool()
 
 
 hotkeys = {}
@@ -64,7 +67,5 @@ $(window).keypress (e) ->
 registerHotkey = (key, func) ->
   hotkeys[key] = func
 
-registerHotkey 49, -> window.currentTool = new NodeTool() # 1
-registerHotkey 50, -> window.currentTool = new BezierTool() # 2
-registerHotkey 113, -> window.currentTool = new NodeTool() # 2
+registerHotkey 113, -> new tools.CommonTool() # 2
 

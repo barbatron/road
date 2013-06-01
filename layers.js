@@ -50,6 +50,14 @@
       return c.attr("stroke", color);
     };
 
+    Layer.prototype.drawStraightRoad = function(line) {
+      var c;
+
+      c = this.ctx.path("M " + line.p0.x + " " + line.p0.y + " L " + line.p1.x + " " + line.p1.y);
+      c.attr("stroke", "#777");
+      return c.attr("stroke-width", "9");
+    };
+
     Layer.prototype.drawDot = function(pos, color) {
       var c;
 
@@ -68,12 +76,31 @@
       return c.attr("stroke", "#eee");
     };
 
+    Layer.prototype.drawRoadCurve = function(road) {
+      var beizer, c;
+
+      beizer = road.opt.curve;
+      c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
+      c.attr("stroke-width", "9");
+      return c.attr("stroke", road.opt.color);
+    };
+
+    Layer.prototype.drawRoadLine = function(road) {
+      var c;
+
+      c = this.ctx.path("M " + road.edge.from.pos.x + "\n  " + road.edge.from.pos.y + "\nL " + road.edge.to.pos.x + "\n  " + road.edge.to.pos.y);
+      c.attr("stroke-width", "9");
+      return c.attr("stroke", "#eee");
+    };
+
     Layer.prototype.drawNode = function(node, large) {
       var c, t;
 
       if (large == null) {
         large = false;
       }
+      c = this.ctx.circle(node.pos.x, node.pos.y, 4);
+      c.attr("fill", "#eee");
       if (large) {
         c = this.ctx.circle(node.pos.x, node.pos.y, 4);
       } else {
@@ -98,6 +125,21 @@
       });
       return c.mouseout(function() {
         return node.out();
+      });
+    };
+
+    Layer.prototype.addEdgeSnapper = function(edge) {
+      var c,
+        _this = this;
+
+      c = this.ctx.path("M" + line.p0.x + " " + line.p0.y + " L" + line.p1.x + " " + line.p1.y);
+      c.attr("stroke-width", "9");
+      c.attr("stroke", "#eee");
+      c.mouseover(function() {
+        return edge.over();
+      });
+      return c.mouseout(function() {
+        return edge.out();
       });
     };
 

@@ -205,6 +205,23 @@ r req[0], ->
     curve.p3 = o.p3
     return curve
 
+  root.C.fromNode = (node, end)->
+    sta = node.pos
+    starg = node.line.growAdd(L(sta,end).length()/2.5).p1
+    mid = node.pos.add(end).div(2)
+    perp = L(node.pos, end).perp().growAll(1000)
+    etarg = starg.mirror(perp)
+    layers.tool.drawDot starg, "#0F0"
+    layers.tool.drawDot mid, "#00F"
+    layers.tool.drawLine perp, "#0FF"
+    layers.tool.drawDot etarg, "#F0F"
+    return C({
+      p0: sta
+      p1: starg
+      p2: etarg
+      p3: end
+    })
+
   root.curveLen = (c) ->
     #console.log "curve", c.p0, c.p3
     prev = c.getLocationAt(0.001, true).point

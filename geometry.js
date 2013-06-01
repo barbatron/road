@@ -285,6 +285,25 @@
       curve.p3 = o.p3;
       return curve;
     };
+    root.C.fromNode = function(node, end) {
+      var etarg, mid, perp, sta, starg;
+
+      sta = node.pos;
+      starg = node.line.growAdd(L(sta, end).length() / 2.5).p1;
+      mid = node.pos.add(end).div(2);
+      perp = L(node.pos, end).perp().growAll(1000);
+      etarg = starg.mirror(perp);
+      layers.tool.drawDot(starg, "#0F0");
+      layers.tool.drawDot(mid, "#00F");
+      layers.tool.drawLine(perp, "#0FF");
+      layers.tool.drawDot(etarg, "#F0F");
+      return C({
+        p0: sta,
+        p1: starg,
+        p2: etarg,
+        p3: end
+      });
+    };
     return root.curveLen = function(c) {
       var cur, curLoc, direction, dist, prev, tally;
 

@@ -37,7 +37,12 @@ class Layer
       """
     c.attr "stroke-width", "9"
     c.attr("stroke", color)
-    
+
+  drawStraightRoad:  (line) ->
+    c = @ctx.path("M #{line.p0.x} #{line.p0.y} L #{line.p1.x} #{line.p1.y}")
+    c.attr("stroke", "#777")
+    c.attr "stroke-width", "9"
+
   drawDot: (pos, color="#505") ->
     c = @ctx.circle(pos.x, pos.y, 4)
     c.attr("fill", color);
@@ -46,8 +51,31 @@ class Layer
     c = @ctx.path("M#{line.p0.x} #{line.p0.y} L#{line.p1.x} #{line.p1.y} ");
     c.attr "stroke-width", "9"
     c.attr("stroke", "#eee");
-    
+
+  drawRoadCurve: (road) ->
+    beizer = road.opt.curve
+    c = @ctx.path """
+      M #{beizer.p0.x} #{beizer.p0.y}
+      C #{beizer.p1.x} #{beizer.p1.y}
+        #{beizer.p2.x} #{beizer.p2.y}
+        #{beizer.p3.x} #{beizer.p3.y}
+      """
+    c.attr "stroke-width", "9"
+    c.attr "stroke", road.opt.color
+
+  drawRoadLine: (road) ->
+    c = @ctx.path """
+      M #{road.edge.from.pos.x}
+        #{road.edge.from.pos.y}
+      L #{road.edge.to.pos.x}
+        #{road.edge.to.pos.y}
+      """
+    c.attr "stroke-width", "9"
+    c.attr "stroke", "#eee"
+
   drawNode: (node, large = false) ->
+    c = @ctx.circle(node.pos.x, node.pos.y, 4)
+    c.attr("fill", "#eee")
     if large
       c = @ctx.circle(node.pos.x, node.pos.y, 4)
     else
@@ -58,13 +86,20 @@ class Layer
     t = @ctx.circle(node.ctrl.x, node.ctrl.y, 1)
     t.attr("fill", "#500")
     t.attr("stroke", "#eee")
-    
+
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)
     c.attr("fill", "rgba(0,0,0,0)");
     c.mouseover => node.over()
     c.mouseout => node.out()
-    
+
+  addEdgeSnapper: (edge) ->
+    c = @ctx.path("M#{line.p0.x} #{line.p0.y} L#{line.p1.x} #{line.p1.y}")
+    c.attr "stroke-width", "9"
+    c.attr("stroke", "#eee");
+    c.mouseover => edge.over()
+    c.mouseout => edge.out()
+
   drawImpasse: (pos) ->
     c = @ctx.circle(pos.x, pos.y, 1)
     c.attr("fill", "#555")
