@@ -25,9 +25,22 @@
       layers.tool.clear();
     }
 
-    CommonTool.prototype.over = function(ent) {
+    CommonTool.prototype.over = function(ent, e) {
+      var dist, handle, selected, shortest, _i, _len, _ref;
+
       if (ent instanceof ents.Node) {
-        return new RoadTool(ent);
+        shortest = 9007199254740992;
+        selected = null;
+        _ref = ent.handels;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          handle = _ref[_i];
+          dist = P(e).distance(handle.pos);
+          if (dist < shortest) {
+            selected = handle;
+            shortest = dist;
+          }
+        }
+        return new RoadTool(selected);
       }
     };
 
@@ -38,30 +51,31 @@
   RoadTool = (function(_super) {
     __extends(RoadTool, _super);
 
-    function RoadTool(node) {
-      this.node = node != null ? node : null;
+    function RoadTool(handle) {
+      this.handle = handle != null ? handle : null;
       this.click = __bind(this.click, this);
       RoadTool.__super__.constructor.call(this);
     }
 
     RoadTool.prototype.click = function(e) {
+      var nextHandle;
+
       if (this.curve != null) {
         layers.main.drawBeizer(this.curve);
-        this.endNode = new ents.Node(this.curve.p3, this.curve.p2);
-        return tools.current = new RoadTool(this.endNode);
+        nextHandle = ents.makeRoad(this.handle, this.curve.p3, this.curve.p2, this.curve);
+        return tools.current = new RoadTool(nextHandle);
       }
     };
 
-    RoadTool.prototype.over = function(ent) {
+    RoadTool.prototype.over = function(ent, e) {
       if (ent instanceof ents.Node) {
         layers.tool.clear();
-        layers.tool.drawNode(this.node, true);
         layers.tool.drawBeizer(this.bezier(ent.pos));
         return this.endNode = ent;
       }
     };
 
-    RoadTool.prototype.out = function(ent) {
+    RoadTool.prototype.out = function(ent, e) {
       if (ent instanceof ents.Node) {
         return this.endNode = null;
       }
@@ -72,14 +86,13 @@
 
       if (this.endNode == null) {
         layers.tool.clear();
-        layers.tool.drawNode(this.node, true);
-        curve = C.fromNode(this.node, P(e));
+        curve = C.fromHandle(this.handle, P(e));
         angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
         len = curveLen(curve);
         rad = (len * ((2 * Math.PI) / angle)) / (2 * Math.PI);
         color = "#333";
         if (angle > Math.PI / 2) {
-          new SharpTurnTool(this.node);
+          new SharpTurnTool(this.handle);
         } else if (rad < 15 || L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()) {
           color = "#333";
         } else {
@@ -128,30 +141,32 @@
   SharpTurnTool = (function(_super) {
     __extends(SharpTurnTool, _super);
 
-    function SharpTurnTool(node) {
-      this.node = node;
+    function SharpTurnTool(handle) {
+      this.handle = handle;
       SharpTurnTool.__super__.constructor.call(this);
     }
 
     SharpTurnTool.prototype.click = function(e) {
+      var nextHandle;
+
       if (this.line != null) {
-        layers.main.drawStraightRoad(this.line);
-        return new RoadTool(new ents.Node(this.line.p1, this.line.p0));
+        nextHandle = ents.makeRoad(this.handle, this.line.p1, this.line.p0);
+        return new RoadTool(nextHandle);
       }
     };
 
     SharpTurnTool.prototype.move = function(e) {
       var angle, curve;
 
-      curve = C.fromNode(this.node, P(e));
+      curve = C.fromHandle(this.handle, P(e));
       angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
       console.log("angle", angle);
       if (angle <= Math.PI / 2) {
         if (!(L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length())) {
-          new RoadTool(this.node);
+          new RoadTool(this.handle);
         }
       }
-      this.line = L(this.node.pos, P(e));
+      this.line = L(this.handle.node.pos, P(e));
       layers.tool.clear();
       return layers.tool.drawStraightRoad(this.line);
     };

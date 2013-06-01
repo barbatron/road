@@ -58,6 +58,14 @@
       return c.attr("stroke-width", "9");
     };
 
+    Layer.prototype.drawHandle = function(handle) {
+      var c;
+
+      c = this.ctx.circle(handle.pos.x, handle.pos.y, 4);
+      c.attr("fill", "#3f3");
+      return this.drawLine(handle.line);
+    };
+
     Layer.prototype.drawDot = function(pos, color) {
       var c;
 
@@ -88,13 +96,13 @@
     Layer.prototype.drawRoadLine = function(road) {
       var c;
 
-      c = this.ctx.path("M " + road.edge.from.pos.x + "\n  " + road.edge.from.pos.y + "\nL " + road.edge.to.pos.x + "\n  " + road.edge.to.pos.y);
+      c = this.ctx.path("M " + road.edge.line.p0.x + "\n  " + road.edge.line.p0.y + "\nL " + road.edge.line.p1.x + "\n  " + road.edge.line.p1.y);
       c.attr("stroke-width", "9");
-      return c.attr("stroke", "#eee");
+      return c.attr("stroke", "#777");
     };
 
     Layer.prototype.drawNode = function(node, large) {
-      var c, t;
+      var c, handle, t, _i, _len, _ref, _results;
 
       if (large == null) {
         large = false;
@@ -109,9 +117,15 @@
       c.attr("stroke-width", "1");
       c.attr("fill", "#500");
       c.attr("stroke", "#eee");
-      t = this.ctx.circle(node.ctrl.x, node.ctrl.y, 1);
-      t.attr("fill", "#500");
-      return t.attr("stroke", "#eee");
+      _ref = node.handels;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        handle = _ref[_i];
+        t = this.ctx.circle(handle.pos.x, handle.pos.y, 1);
+        t.attr("fill", "#500");
+        _results.push(t.attr("stroke", "#eee"));
+      }
+      return _results;
     };
 
     Layer.prototype.addNodeSnapper = function(node) {
@@ -120,11 +134,11 @@
 
       c = this.ctx.circle(node.pos.x, node.pos.y, 10);
       c.attr("fill", "rgba(0,0,0,0)");
-      c.mouseover(function() {
-        return node.over();
+      c.mouseover(function(e) {
+        return node.over(e);
       });
-      return c.mouseout(function() {
-        return node.out();
+      return c.mouseout(function(e) {
+        return node.out(e);
       });
     };
 

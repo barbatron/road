@@ -10,34 +10,42 @@ class CommonTool extends Tool
   constructor: () ->
     super()
     layers.tool.clear()
-  over: (ent) ->
+  over: (ent, e) ->
     if ent instanceof ents.Node
-      new RoadTool ent
+      shortest = 9007199254740992
+      selected = null
+      for handle in ent.handels
+        dist = P(e).distance(handle.pos)
+        if dist < shortest
+          selected = handle
+          shortest = dist
+      new RoadTool(selected)
 
 class RoadTool extends Tool
-  constructor: (@node = null) ->
+  constructor: (@handle = null) ->
     super()
   click: (e) =>
     #if @endNode? then end = @endNode.pos else end = P(e)
     if @curve?
       layers.main.drawBeizer @curve
-      @endNode = new ents.Node @curve.p3, @curve.p2# unless @endNode?
-      tools.current = new RoadTool(@endNode)
+      #@endNode = new ents.Node @curve.p3, @curve.p2# unless @endNode?
+      nextHandle = ents.makeRoad(@handle, @curve.p3, @curve.p2, @curve )
+      tools.current = new RoadTool(nextHandle)
 
-  over: (ent) ->
+  over: (ent, e) ->
     if ent instanceof ents.Node
       layers.tool.clear()
-      layers.tool.drawNode @node, true
+      #layers.tool.drawNode @node, true
       layers.tool.drawBeizer @bezier ent.pos
       @endNode = ent
-  out: (ent) ->
+  out: (ent, e) ->
     if ent instanceof ents.Node
       @endNode = null
   move: (e) ->
     unless @endNode?
       layers.tool.clear()
-      layers.tool.drawNode @node, true
-      curve = C.fromNode @node, P(e)
+      #layers.tool.drawNode @node, true
+      curve = C.fromHandle @handle, P(e)
 
       angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
 
@@ -46,7 +54,7 @@ class RoadTool extends Tool
       #steepness = Math.max 0, ((0.028-(angle/len))*20)-.30
       color = "#333"
       if angle > Math.PI/2
-        new SharpTurnTool(@node)
+        new SharpTurnTool(@handle)
       else if rad < 15 or L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
         color = "#333"
       else
@@ -74,20 +82,21 @@ root.colorSpeed =
   755: 0.50
 
 class SharpTurnTool extends Tool
-  constructor: (@node) ->
+  constructor: (@handle) ->
     super()
   click: (e) ->
     if @line?
-      layers.main.drawStraightRoad(@line)
-      new RoadTool(new ents.Node(@line.p1, @line.p0))
+      #layers.main.drawStraightRoad(@line)
+      nextHandle = ents.makeRoad(@handle, @line.p1, @line.p0)
+      new RoadTool(nextHandle)
   move: (e) ->
-    curve = C.fromNode @node, P(e)
+    curve = C.fromHandle @handle, P(e)
     angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
     console.log "angle", angle
     if angle <= Math.PI/2
       unless  L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
-        new RoadTool(@node)
-    @line = L(@node.pos, P(e))
+        new RoadTool(@handle)
+    @line = L(@handle.node.pos, P(e))
     layers.tool.clear()
     layers.tool.drawStraightRoad(@line)
 

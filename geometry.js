@@ -285,13 +285,13 @@
       curve.p3 = o.p3;
       return curve;
     };
-    root.C.fromNode = function(node, end) {
+    root.C.fromHandle = function(handle, end) {
       var etarg, mid, perp, sta, starg;
 
-      sta = node.pos;
-      starg = node.line.growAdd(L(sta, end).length() / 2.5).p1;
-      mid = node.pos.add(end).div(2);
-      perp = L(node.pos, end).perp().growAll(1000);
+      sta = handle.node.pos;
+      starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta, end).length() / 2.5).p1;
+      mid = handle.node.pos.add(end).div(2);
+      perp = L(handle.node.pos, end).perp().growAll(1000);
       etarg = starg.mirror(perp);
       layers.tool.drawDot(starg, "#0F0");
       layers.tool.drawDot(mid, "#00F");

@@ -43,6 +43,11 @@ class Layer
     c.attr("stroke", "#777")
     c.attr "stroke-width", "9"
 
+  drawHandle: (handle) ->
+    c = @ctx.circle(handle.pos.x, handle.pos.y, 4)
+    c.attr("fill", "#3f3");
+    @drawLine(handle.line)
+
   drawDot: (pos, color="#505") ->
     c = @ctx.circle(pos.x, pos.y, 4)
     c.attr("fill", color);
@@ -65,13 +70,13 @@ class Layer
 
   drawRoadLine: (road) ->
     c = @ctx.path """
-      M #{road.edge.from.pos.x}
-        #{road.edge.from.pos.y}
-      L #{road.edge.to.pos.x}
-        #{road.edge.to.pos.y}
+      M #{road.edge.line.p0.x}
+        #{road.edge.line.p0.y}
+      L #{road.edge.line.p1.x}
+        #{road.edge.line.p1.y}
       """
     c.attr "stroke-width", "9"
-    c.attr "stroke", "#eee"
+    c.attr "stroke", "#777"
 
   drawNode: (node, large = false) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 4)
@@ -83,15 +88,16 @@ class Layer
     c.attr "stroke-width", "1"
     c.attr("fill", "#500")
     c.attr("stroke", "#eee")
-    t = @ctx.circle(node.ctrl.x, node.ctrl.y, 1)
-    t.attr("fill", "#500")
-    t.attr("stroke", "#eee")
+    for handle in node.handels
+      t = @ctx.circle(handle.pos.x, handle.pos.y, 1)
+      t.attr("fill", "#500")
+      t.attr("stroke", "#eee")
 
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)
     c.attr("fill", "rgba(0,0,0,0)");
-    c.mouseover => node.over()
-    c.mouseout => node.out()
+    c.mouseover (e) => node.over(e)
+    c.mouseout (e) => node.out(e)
 
   addEdgeSnapper: (edge) ->
     c = @ctx.path("M#{line.p0.x} #{line.p0.y} L#{line.p1.x} #{line.p1.y}")
