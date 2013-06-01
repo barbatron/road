@@ -55,6 +55,7 @@
       this.handle = handle != null ? handle : null;
       this.click = __bind(this.click, this);
       RoadTool.__super__.constructor.call(this);
+      this.endNode = null;
     }
 
     RoadTool.prototype.click = function(e) {
@@ -62,16 +63,21 @@
 
       if (this.curve != null) {
         layers.main.drawBeizer(this.curve);
-        nextHandle = ents.makeRoad(this.handle, this.curve.p3, this.curve.p2, this.curve);
+        nextHandle = ents.makeRoad(this.handle, this.curve.p3, this.curve.p2, this.curve, this.endNode);
         return tools.current = new RoadTool(nextHandle);
       }
     };
 
     RoadTool.prototype.over = function(ent, e) {
+      var color, curve;
+
       if (ent instanceof ents.Node) {
-        layers.tool.clear();
-        layers.tool.drawBeizer(this.bezier(ent.pos));
-        return this.endNode = ent;
+        curve = C.fromHandle(this.handle, ent.pos);
+        color = this.check(curve);
+        if (color != null) {
+          this.draw(color);
+          return this.endNode = ent;
+        }
       }
     };
 
@@ -82,36 +88,63 @@
     };
 
     RoadTool.prototype.move = function(e) {
-      var angle, color, curve, hue, k, len, rad, v, _ref;
+      var curve;
 
       if (this.endNode == null) {
-        layers.tool.clear();
         curve = C.fromHandle(this.handle, P(e));
-        angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
-        len = curveLen(curve);
-        rad = (len * ((2 * Math.PI) / angle)) / (2 * Math.PI);
-        color = "#333";
-        if (angle > Math.PI / 2) {
-          new SharpTurnTool(this.handle);
-        } else if (rad < 15 || L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()) {
-          color = "#333";
-        } else {
-          hue = 0;
-          _ref = root.colorSpeed;
-          for (k in _ref) {
-            v = _ref[k];
-            if (rad > new Number(k)) {
-              hue = Math.max(v, hue);
-            }
-          }
-          color = "hsb(" + hue + ", 0.9, 0.5)";
-          this.curve = curve;
-        }
-        console.log(angle, len, rad, color);
-        if (this.curve != null) {
-          return layers.tool.drawBeizer(this.curve, color);
-        }
+        return this.draw(this.check(curve));
       }
+    };
+
+    RoadTool.prototype.check = function(curve) {
+      var angle, color, hue, k, len, rad, v, _ref;
+
+      angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
+      len = curveLen(curve);
+      rad = (len * ((2 * Math.PI) / angle)) / (2 * Math.PI);
+      if (angle > Math.PI / 2) {
+        new SharpTurnTool(this.handle);
+      }
+      if (!(rad < 15 || L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length())) {
+        hue = 0;
+        _ref = root.colorSpeed;
+        for (k in _ref) {
+          v = _ref[k];
+          if (rad > new Number(k)) {
+            hue = Math.max(v, hue);
+          }
+        }
+        color = "hsb(" + hue + ", 0.9, 0.5)";
+        this.curve = curve;
+      }
+      console.log(angle, len, rad, color);
+      return color;
+    };
+
+    RoadTool.prototype.draw = function(color) {
+      var edge, road, _i, _len, _ref, _results;
+
+      layers.tool.clear();
+      if (this.curve != null) {
+        layers.tool.drawBeizer(this.curve, color);
+      }
+      _ref = this.handle.inverse.edges;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        edge = _ref[_i];
+        _results.push((function() {
+          var _j, _len1, _ref1, _results1;
+
+          _ref1 = edge.roads;
+          _results1 = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            road = _ref1[_j];
+            _results1.push(layers.tool["drawRoad" + road.shape](road, "rgba(255,30,30,0.5)"));
+          }
+          return _results1;
+        })());
+      }
+      return _results;
     };
 
     RoadTool.prototype.keyDown = function(e) {
@@ -150,23 +183,53 @@
       var nextHandle;
 
       if (this.line != null) {
-        nextHandle = ents.makeRoad(this.handle, this.line.p1, this.line.p0);
+        nextHandle = ents.makeRoad(this.handle, this.line.p1, this.line.p0, null, this.endNode);
         return new RoadTool(nextHandle);
       }
     };
 
     SharpTurnTool.prototype.move = function(e) {
-      var angle, curve;
+      var curve;
 
-      curve = C.fromHandle(this.handle, P(e));
+      if (this.endNode == null) {
+        curve = C.fromHandle(this.handle, P(e));
+        this.line = L(this.handle.node.pos, P(e));
+        this.check(curve);
+        return this.draw();
+      }
+    };
+
+    SharpTurnTool.prototype.over = function(ent, e) {
+      var curve;
+
+      if (ent instanceof ents.Node) {
+        curve = C.fromHandle(this.handle, ent.pos);
+        this.line = L(this.handle.node.pos, ent.pos);
+        this.check(curve);
+        this.endNode = ent;
+        return this.draw();
+      }
+    };
+
+    SharpTurnTool.prototype.out = function(ent, e) {
+      if (ent instanceof ents.Node) {
+        return this.endNode = null;
+      }
+    };
+
+    SharpTurnTool.prototype.check = function(curve) {
+      var angle;
+
       angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
       console.log("angle", angle);
       if (angle <= Math.PI / 2) {
         if (!(L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length())) {
-          new RoadTool(this.handle);
+          return new RoadTool(this.handle);
         }
       }
-      this.line = L(this.handle.node.pos, P(e));
+    };
+
+    SharpTurnTool.prototype.draw = function() {
       layers.tool.clear();
       return layers.tool.drawStraightRoad(this.line);
     };

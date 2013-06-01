@@ -23,7 +23,7 @@
         this.handels.push(handle);
         this.handels.push(handle.inverse);
       }
-      return handleqqqqqq;
+      return handle;
     };
 
     Node.prototype.over = function(e) {
@@ -83,7 +83,12 @@
       this.line = L(this.from.node.pos, this.to.node.pos);
       this.from.addEdge(this);
       this.to.addEdge(this);
+      this.roads = [];
     }
+
+    Edge.prototype.addRoad = function(road) {
+      return this.roads.push(road);
+    };
 
     return Edge;
 
@@ -101,6 +106,7 @@
       this.shape = shape;
       this.opt = opt;
       this.opt = _.defaults(this.opt, defaults);
+      this.edge.addRoad(this);
       this.draw();
     }
 
@@ -112,13 +118,18 @@
 
   })();
 
-  makeRoad = function(oldHandle, end, target, curve) {
-    var edge, newHandle, newNode, shape;
+  makeRoad = function(oldHandle, end, target, curve, newNode) {
+    var edge, newHandle, shape;
 
     if (curve == null) {
       curve = null;
     }
-    newNode = new Node(end);
+    if (newNode == null) {
+      newNode = null;
+    }
+    if (newNode == null) {
+      newNode = new Node(end);
+    }
     newHandle = new Handle(newNode, target);
     edge = new Edge(oldHandle, newHandle);
     if (curve != null) {

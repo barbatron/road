@@ -12,7 +12,7 @@ class Node
     if @handels.indexOf handle is -1
       @handels.push handle
       @handels.push handle.inverse
-    return handleqqqqqq
+    return handle
   over: (e) ->
     tools.current.over?(@, e)
     #layers.tool.drawNode(@, true)
@@ -42,19 +42,22 @@ class Edge
     @line = L(@from.node.pos,@to.node.pos)
     @from.addEdge(@)
     @to.addEdge(@)
+    @roads = []
+  addRoad: (road) -> @roads.push road
 
 class Road
   defaults =
     color: "#777"
   constructor: (@edge, @shape, @opt) ->
     @opt = _.defaults(@opt, defaults)
+    @edge.addRoad(@)
     @draw()
   draw: () ->
     layers.main["drawRoad#{@shape}"](@)
 
 
-makeRoad = (oldHandle, end, target, curve=null) ->
-  newNode = new Node(end)
+makeRoad = (oldHandle, end, target, curve=null, newNode=null) ->
+  newNode = new Node(end) unless newNode?
   newHandle = new Handle(newNode, target)
   edge = new Edge(oldHandle, newHandle)
   if curve? then shape="Curve" else shape="Line"

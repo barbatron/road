@@ -57,7 +57,7 @@ class Layer
     c.attr "stroke-width", "9"
     c.attr("stroke", "#eee");
 
-  drawRoadCurve: (road) ->
+  drawRoadCurve: (road, color="#777") ->
     beizer = road.opt.curve
     c = @ctx.path """
       M #{beizer.p0.x} #{beizer.p0.y}
@@ -66,9 +66,9 @@ class Layer
         #{beizer.p3.x} #{beizer.p3.y}
       """
     c.attr "stroke-width", "9"
-    c.attr "stroke", road.opt.color
+    c.attr "stroke", color
 
-  drawRoadLine: (road) ->
+  drawRoadLine: (road, color="#777") ->
     c = @ctx.path """
       M #{road.edge.line.p0.x}
         #{road.edge.line.p0.y}
@@ -76,7 +76,7 @@ class Layer
         #{road.edge.line.p1.y}
       """
     c.attr "stroke-width", "9"
-    c.attr "stroke", "#777"
+    c.attr "stroke", color
 
   drawNode: (node, large = false) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 4)
