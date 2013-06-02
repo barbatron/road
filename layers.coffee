@@ -67,6 +67,7 @@ class Layer
       """
     c.attr "stroke-width", "9"
     c.attr "stroke", color
+    return c
 
   drawRoadLine: (road, color="#777") ->
     c = @ctx.path """
@@ -77,6 +78,8 @@ class Layer
       """
     c.attr "stroke-width", "9"
     c.attr "stroke", color
+    console.log "road", c
+    return c
 
   drawNode: (node, large = false) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 4)

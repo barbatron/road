@@ -45,6 +45,8 @@ class Edge
     @from.addEdge(@)
     @to.addEdge(@)
   addRoad: (road) -> @road = road
+  destroy: () ->
+    @road.destroy()
 
 class Road
   defaults =
@@ -55,7 +57,11 @@ class Road
     @draw()
     ents.roads.push this
   draw: () ->
-    layers.main["drawRoad#{@shape}"](@)
+    @elem = layers.main["drawRoad#{@shape}"](@)
+  destroy: () ->
+    @elem.remove()
+    @elem.parent.removeChild(@elem);
+    ents.roads = _.without ents.roads, @
 
 
 makeRoad = (oldHandle, end, target, curve=null, newNode=null) ->
@@ -75,16 +81,6 @@ splitRoad = (intersection) ->
   console.log "param", param
   curves = split curveToSplit, param
 
-  ###
-  firstPoint =    new paper.Point(c1.p0.x, c1.p0.y)
-  handleIn =      new paper.Point(c1.p1.x, c1.p1.y)
-  secondPoint =   new paper.Point(c1.p3.x, c1.p1.y)
-  handleOut =     new paper.Point(c1.p2.x, c1.p2.y)
-  firstSegment =  new paper.Segment(firstPoint, han+leOut)
-  root.path2000 = new paper.Path(firstSegment, secondSegment)
-  path = path2000.split(intersection._point)#.road.opt.curve.split(intersection)
-  ###
-
   console.log "curves", curves
 
   newNode =   new Node curves.left.p3
@@ -96,7 +92,7 @@ splitRoad = (intersection) ->
   edge1 = new Edge edgeToSplit.from, handleIn
   curve = C
     p0: edgeToSplit.from.node.pos
-    p1: edgeToSplit.from.pos
+    p1: curves.left.p1
     p2: handleIn.pos
     p3: newNode.pos
   new Road(edge1, edgeToSplit.road.shape, {curve: curve})
@@ -105,14 +101,14 @@ splitRoad = (intersection) ->
   curve = C
     p0: newNode.pos
     p1: handleOut.pos
-    p2: edgeToSplit.to.pos
+    p2: curves.right.p3
     p3: edgeToSplit.to.node.pos
   new Road(edge2, edgeToSplit.road.shape, {curve: curve})
 
   edgeToSplit.to.removeEdge(edgeToSplit)
   edgeToSplit.from.removeEdge(edgeToSplit)
 
-  root.roads = _.without(edgeToSplit.road)
+  edgeToSplit.destroy()
 
   return newNode
 

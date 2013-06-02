@@ -93,7 +93,8 @@
       beizer = road.opt.curve;
       c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
       c.attr("stroke-width", "9");
-      return c.attr("stroke", color);
+      c.attr("stroke", color);
+      return c;
     };
 
     Layer.prototype.drawRoadLine = function(road, color) {
@@ -104,7 +105,9 @@
       }
       c = this.ctx.path("M " + road.edge.line.p0.x + "\n  " + road.edge.line.p0.y + "\nL " + road.edge.line.p1.x + "\n  " + road.edge.line.p1.y);
       c.attr("stroke-width", "9");
-      return c.attr("stroke", color);
+      c.attr("stroke", color);
+      console.log("road", c);
+      return c;
     };
 
     Layer.prototype.drawNode = function(node, large) {
