@@ -122,6 +122,8 @@
 
       if (y != null) {
         p = new Point(x, y);
+      } else if (x instanceof paper.Point) {
+        p = new Point(x.x, x.y);
       } else {
         p = new Point(x.offsetX, x.offsetY);
       }
@@ -241,9 +243,6 @@
           half = this.p1.sub(this.p0).div(2);
           p0 = this.p0.add(half);
         }
-        if (this.distance(p0) !== 0) {
-          throw new Error("point not on line");
-        }
         v = this.getDirection();
         v = v.perp();
         p1 = p0.add(v);
@@ -303,6 +302,86 @@
         p2: etarg,
         p3: end
       });
+    };
+    root.splitTest = function() {
+      var c;
+
+      c = C({
+        p0: P(0, 0),
+        p1: P(0, 5),
+        p2: P(10, 5),
+        p3: P(10, 0)
+      });
+      return console.log(JSON.stringify(root.split(c.pointsArr, 0.5)));
+    };
+    root.bezier = function(pts) {
+      return function(t) {
+        var a, b, i, j;
+
+        a = pts;
+        while (a.length > 1) {
+          i = 0;
+          b = [];
+          j = void 0;
+          while (i < a.length - 1) {
+            b[i] = [];
+            j = 0;
+            while (j < a[i].length) {
+              b[i][j] = a[i][j] * (1 - t) + a[i + 1][j] * t;
+              j++;
+            }
+            i++;
+          }
+          a = b;
+        }
+        return a[0];
+      };
+    };
+    root.split = function(o, t) {
+      var drawCurve, left, right,
+        _this = this;
+
+      left = [];
+      right = [];
+      drawCurve = function(points, t) {
+        var i, newpoints;
+
+        if (points.length === 1) {
+          left.push(points[0]);
+          return right.push(points[0]);
+        } else {
+          newpoints = new Array(points.length - 1);
+          i = 0;
+          while (i < newpoints.length) {
+            if (i === 0) {
+              left.push(points[i]);
+            }
+            if (i === newpoints.length - 1) {
+              right.push(points[i + 1]);
+            }
+            if (points[i + 1] != null) {
+              newpoints[i] = points[i].mult(1 - t).add(points[i + 1].mult(t));
+            }
+            i++;
+          }
+          return drawCurve(newpoints, t);
+        }
+      };
+      drawCurve([o.p0, o.p1, o.p2, o.p3], t);
+      return {
+        right: {
+          p0: right[0],
+          p1: right[1],
+          p2: right[2],
+          p3: right[3]
+        },
+        left: {
+          p0: left[0],
+          p1: left[2],
+          p2: left[1],
+          p3: left[3]
+        }
+      };
     };
     return root.curveLen = function(c) {
       var cur, curLoc, direction, dist, prev, tally;

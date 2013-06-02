@@ -62,6 +62,9 @@
       var nextHandle;
 
       if (this.curve != null) {
+        if (this.intersection != null) {
+          this.endNode = ents.splitRoad(this.intersection);
+        }
         layers.main.drawBeizer(this.curve);
         nextHandle = ents.makeRoad(this.handle, this.curve.p3, this.curve.p2, this.curve, this.endNode);
         return tools.current = new RoadTool(nextHandle);
@@ -72,6 +75,8 @@
       var color, curve;
 
       if (ent instanceof ents.Node) {
+        console.log("ent", ent);
+        console.log("@handle", this.handle);
         curve = C.fromHandle(this.handle, ent.pos);
         color = this.check(curve);
         if (color != null) {
@@ -88,12 +93,61 @@
     };
 
     RoadTool.prototype.move = function(e) {
-      var curve;
+      var curve, intersection;
 
       if (this.endNode == null) {
         curve = C.fromHandle(this.handle, P(e));
+        this.intersection = null;
+        if (curve.length > 100) {
+          intersection = this.intersecting(curve);
+          if (intersection != null) {
+            this.intersection = intersection;
+            curve = C.fromHandle(this.handle, P(intersection.p.x, intersection.p.y));
+          }
+        }
         return this.draw(this.check(curve));
       }
+    };
+
+    RoadTool.prototype.intersecting = function(curve) {
+      var asdf, cross, dist, inter, intersections, road, selected, shortest, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+
+      intersections = [];
+      _ref = ents.roads;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        road = _ref[_i];
+        if (road.opt.curve != null) {
+          _ref1 = curve.getIntersections(road.opt.curve);
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            inter = _ref1[_j];
+            inter.road = road;
+            intersections.push(inter);
+          }
+        }
+      }
+      shortest = 9007199254740992;
+      selected = null;
+      asdf = null;
+      console.log("inters", intersections, curve.p0, curve.p3);
+      root.intersections = intersections;
+      for (_k = 0, _len2 = intersections.length; _k < _len2; _k++) {
+        cross = intersections[_k];
+        if ((cross != null ? cross._point : void 0) != null) {
+          cross.p = P(cross._point.x, cross._point.y);
+          dist = P(cross._point.x, cross._point.y).distance(this.handle.node.pos);
+          if (dist < 1) {
+            continue;
+          }
+          if (dist < shortest) {
+            console.log(shortest);
+            shortest = dist;
+            selected = cross;
+            asdf = cross;
+          }
+        }
+      }
+      console.log("intersection detected at", selected, asdf);
+      return selected;
     };
 
     RoadTool.prototype.check = function(curve) {
@@ -122,7 +176,7 @@
     };
 
     RoadTool.prototype.draw = function(color) {
-      var edge, road, _i, _len, _ref, _results;
+      var edge, _i, _len, _ref, _results;
 
       layers.tool.clear();
       if (this.curve != null) {
@@ -132,17 +186,7 @@
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         edge = _ref[_i];
-        _results.push((function() {
-          var _j, _len1, _ref1, _results1;
-
-          _ref1 = edge.roads;
-          _results1 = [];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            road = _ref1[_j];
-            _results1.push(layers.tool["drawRoad" + road.shape](road, "rgba(255,30,30,0.5)"));
-          }
-          return _results1;
-        })());
+        _results.push(layers.tool["drawRoad" + edge.road.shape](edge.road, "rgba(255,30,30,0.5)"));
       }
       return _results;
     };

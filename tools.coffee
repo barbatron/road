@@ -28,12 +28,16 @@ class RoadTool extends Tool
 
   click: (e) =>
     if @curve?
+      if @intersection?
+        @endNode = ents.splitRoad(@intersection)
       layers.main.drawBeizer @curve
       nextHandle = ents.makeRoad(@handle, @curve.p3, @curve.p2, @curve, @endNode)
       tools.current = new RoadTool(nextHandle)
 
   over: (ent, e) ->
     if ent instanceof ents.Node
+      console.log "ent", ent
+      console.log "@handle", @handle
       curve = C.fromHandle @handle, ent.pos
       color = @check(curve)
       if color?
@@ -47,7 +51,38 @@ class RoadTool extends Tool
   move: (e) ->
     unless @endNode?
       curve = C.fromHandle @handle, P(e)
+      @intersection = null
+      if curve.length > 100
+        intersection= @intersecting(curve)
+        if intersection?
+          @intersection = intersection
+          curve = C.fromHandle @handle, P(intersection.p.x, intersection.p.y)
       @draw @check(curve)
+
+  intersecting: (curve)->
+    intersections = []
+    for road in ents.roads
+      if road.opt.curve?
+        for inter in curve.getIntersections(road.opt.curve)
+          inter.road = road
+          intersections.push inter
+    shortest = 9007199254740992
+    selected = null
+    asdf = null
+    console.log "inters", intersections, curve.p0, curve.p3
+    root.intersections = intersections
+    for cross in intersections
+      if cross?._point?
+        cross.p = P(cross._point.x, cross._point.y)
+        dist = P(cross._point.x, cross._point.y).distance(@handle.node.pos)
+        continue if dist < 1
+        if dist < shortest
+          console.log shortest
+          shortest = dist
+          selected = cross
+          asdf = cross
+    console.log "intersection detected at", selected, asdf
+    return selected
 
   check: (curve) ->
     angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
@@ -68,8 +103,7 @@ class RoadTool extends Tool
     layers.tool.clear()
     layers.tool.drawBeizer @curve, color if @curve?
     for edge in @handle.inverse.edges
-      for road in edge.roads
-        layers.tool["drawRoad#{road.shape}"](road, "rgba(255,30,30,0.5)")
+      layers.tool["drawRoad#{edge.road.shape}"](edge.road, "rgba(255,30,30,0.5)")
 
   keyDown: (e) ->
     tools.current = new StraightRoadTool(@node) if e.which is 17

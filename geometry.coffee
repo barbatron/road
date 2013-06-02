@@ -93,6 +93,8 @@ r req[0], ->
   root.P =  (x, y) ->
     if y?
       p = new Point(x, y)
+    else if x instanceof paper.Point
+      p = new Point(x.x, x.y)
     else
       p = new Point(x.offsetX, x.offsetY)
     return p
@@ -172,7 +174,7 @@ r req[0], ->
         # take: p0 + (p1 - p0) / 2
         half = @p1.sub(@p0).div(2) # Vector2
         p0 = @p0.add(half)
-      throw new Error("point not on line")  if @distance(p0) isnt 0
+      # throw new Error("point not on line")  if @distance(p0) isnt 0
       v = @getDirection() # Vector2
       v = v.perp()
       p1 = p0.add(v)
@@ -222,6 +224,68 @@ r req[0], ->
       p3: end
     })
 
+  root.splitTest = ()->
+    c = C
+      p0: P(0,0)
+      p1: P(0,5)
+      p2: P(10,5)
+      p3: P(10,0)
+    console.log JSON.stringify root.split c.pointsArr, 0.5
+
+
+  root.bezier = (pts) ->
+    (t) ->
+      a = pts # do..while loop in disguise
+
+      while a.length > 1
+        i = 0 # cycle over control points
+        b = []
+        j = undefined
+
+        while i < a.length - 1
+          b[i] = [] # cycle over dimensions
+          j = 0
+
+          while j < a[i].length
+            b[i][j] = a[i][j] * (1 - t) + a[i + 1][j] * t # interpolation
+            j++
+          i++
+        a = b
+      a[0]
+
+  root.split = (o, t) ->
+    left = []
+    right = []
+    drawCurve = (points, t) =>
+      if points.length is 1
+        left.push points[0]
+        right.push points[0]
+        #draw points[0]
+      else
+        newpoints = new Array(points.length-1)
+        i = 0
+        while i < newpoints.length
+          left.push points[i]  if i is 0
+          right.push points[i + 1]  if i is newpoints.length - 1
+          newpoints[i] = points[i].mult(1-t).add(points[i + 1].mult(t)) if points[i + 1]?
+          i++
+        drawCurve newpoints, t
+    drawCurve([ o.p0, o.p1, o.p2, o.p3 ], t)
+    return {
+      right:
+        p0: right[0]
+        p1: right[1]
+        p2: right[2]
+        p3: right[3]
+      left:
+        p0: left[0]
+        p1: left[2]
+        p2: left[1]
+        p3: left[3]
+    }
+
+
+
   root.curveLen = (c) ->
     #console.log "curve", c.p0, c.p3
     prev = c.getLocationAt(0.001, true).point
@@ -240,3 +304,5 @@ r req[0], ->
       tally += dist
       prev = cur
     tally
+
+
