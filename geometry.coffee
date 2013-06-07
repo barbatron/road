@@ -192,6 +192,13 @@ r req[0], ->
       d = p1.sub(p) # Vector2
       d.length() # number
 
+    toCurve: () ->
+      return C
+        p0: @p0
+        p1: @p1
+        p2: @p0
+        p3: @p1
+
   root.L = (p0, p1) ->
     new Line(p0, p1)
 
@@ -230,7 +237,7 @@ r req[0], ->
       p1: P(0,5)
       p2: P(10,5)
       p3: P(10,0)
-    console.log JSON.stringify root.split c.pointsArr, 0.5
+    #console.log JSON.stringify root.split c.pointsArr, 0.5
 
 
   root.bezier = (pts) ->

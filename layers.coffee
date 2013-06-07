@@ -18,6 +18,7 @@ class Layer
       "height": height + "px"
     $('body').append div
     @ctx = new Raphael(id, 10000, 10000)
+
     @clear()
     
   clear: ->
@@ -52,13 +53,8 @@ class Layer
     c = @ctx.circle(pos.x, pos.y, 4)
     c.attr("fill", color);
     
-  drawRoad: (line) ->
-    c = @ctx.path("M#{line.p0.x} #{line.p0.y} L#{line.p1.x} #{line.p1.y} ");
-    c.attr "stroke-width", "9"
-    c.attr("stroke", "#eee");
-
-  drawRoadCurve: (road, color="#777") ->
-    beizer = road.opt.curve
+  drawRoad: (road, color="#777") ->
+    beizer = road.curve
     c = @ctx.path """
       M #{beizer.p0.x} #{beizer.p0.y}
       C #{beizer.p1.x} #{beizer.p1.y}
@@ -78,8 +74,10 @@ class Layer
       """
     c.attr "stroke-width", "9"
     c.attr "stroke", color
-    console.log "road", c
     return c
+
+  remove: (id) ->
+    @ctx.getById(id).remove()
 
   drawNode: (node, large = false) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 4)
@@ -91,10 +89,10 @@ class Layer
     c.attr "stroke-width", "1"
     c.attr("fill", "#500")
     c.attr("stroke", "#eee")
-    for handle in node.handels
-      t = @ctx.circle(handle.pos.x, handle.pos.y, 1)
-      t.attr("fill", "#500")
-      t.attr("stroke", "#eee")
+    #for handle in node.handels
+    #  t = @ctx.circle(handle.pos.x, handle.pos.y, 1)
+    #  t.attr("fill", "#500")
+    #  t.attr("stroke", "#eee")
 
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)

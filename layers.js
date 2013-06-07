@@ -76,21 +76,13 @@
       return c.attr("fill", color);
     };
 
-    Layer.prototype.drawRoad = function(line) {
-      var c;
-
-      c = this.ctx.path("M" + line.p0.x + " " + line.p0.y + " L" + line.p1.x + " " + line.p1.y + " ");
-      c.attr("stroke-width", "9");
-      return c.attr("stroke", "#eee");
-    };
-
-    Layer.prototype.drawRoadCurve = function(road, color) {
+    Layer.prototype.drawRoad = function(road, color) {
       var beizer, c;
 
       if (color == null) {
         color = "#777";
       }
-      beizer = road.opt.curve;
+      beizer = road.curve;
       c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
       c.attr("stroke-width", "9");
       c.attr("stroke", color);
@@ -106,12 +98,15 @@
       c = this.ctx.path("M " + road.edge.line.p0.x + "\n  " + road.edge.line.p0.y + "\nL " + road.edge.line.p1.x + "\n  " + road.edge.line.p1.y);
       c.attr("stroke-width", "9");
       c.attr("stroke", color);
-      console.log("road", c);
       return c;
     };
 
+    Layer.prototype.remove = function(id) {
+      return this.ctx.getById(id).remove();
+    };
+
     Layer.prototype.drawNode = function(node, large) {
-      var c, handle, t, _i, _len, _ref, _results;
+      var c;
 
       if (large == null) {
         large = false;
@@ -125,16 +120,7 @@
       }
       c.attr("stroke-width", "1");
       c.attr("fill", "#500");
-      c.attr("stroke", "#eee");
-      _ref = node.handels;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        handle = _ref[_i];
-        t = this.ctx.circle(handle.pos.x, handle.pos.y, 1);
-        t.attr("fill", "#500");
-        _results.push(t.attr("stroke", "#eee"));
-      }
-      return _results;
+      return c.attr("stroke", "#eee");
     };
 
     Layer.prototype.addNodeSnapper = function(node) {

@@ -264,6 +264,15 @@
         return d.length();
       };
 
+      Line.prototype.toCurve = function() {
+        return C({
+          p0: this.p0,
+          p1: this.p1,
+          p2: this.p0,
+          p3: this.p1
+        });
+      };
+
       return Line;
 
     })();
@@ -306,13 +315,12 @@
     root.splitTest = function() {
       var c;
 
-      c = C({
+      return c = C({
         p0: P(0, 0),
         p1: P(0, 5),
         p2: P(10, 5),
         p3: P(10, 0)
       });
-      return console.log(JSON.stringify(root.split(c.pointsArr, 0.5)));
     };
     root.bezier = function(pts) {
       return function(t) {
