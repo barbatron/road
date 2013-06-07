@@ -82,6 +82,17 @@
       return c;
     };
 
+    Layer.prototype.drawLeaf = function(rectangle, color) {
+      var c;
+
+      if (color == null) {
+        color = "rgba(200,0,0,0.5)";
+      }
+      c = this.ctx.path("M " + rectangle.p0.x + " " + rectangle.p0.y + "\nL " + rectangle.p1.x + " " + rectangle.p1.y + "\n  " + rectangle.p2.x + " " + rectangle.p2.y + "\n  " + rectangle.p3.x + " " + rectangle.p3.y);
+      c.attr("stroke", color);
+      return c.attr("fill", color);
+    };
+
     Layer.prototype.remove = function(id) {
       return this.ctx.getById(id).remove();
     };

@@ -65,6 +65,7 @@ class Handle  extends Entity
 class Edge extends Entity
   defaults =
     color: "#777"
+    width: 7
   constructor: (@from, @to, @curve) ->
     super()
     @opt = _.defaults(defaults)
@@ -87,6 +88,15 @@ class Edge extends Entity
       return false
   draw: () ->
     layers.main.drawRoad(this)
+
+class Leaf extends Entity
+  constructor: (@edge, @rect, @parameter) ->
+    super()
+    @draw()
+    @pos = @rect.p0
+  draw: () ->
+    layers.main.drawLeaf(@rect, "#777")
+
 
 makeRoad = (oldHandle, curve, newNode=null, continous) ->
   newNode = new Node(curve.p3) unless newNode?
@@ -145,6 +155,7 @@ root.ents.splitRoad = splitRoad
 root.ents.Node = Node
 root.ents.Handle = Handle
 root.ents.Edge = Edge
+root.ents.Leaf = Leaf
 root.ents.edges = []
 root.ents.nodes = []
 root.ents.handels = []

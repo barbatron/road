@@ -24,8 +24,12 @@ class CommonTool extends Tool
     super()
     layers.tool.clear()
   click: () ->
+    if @closestEdge?
+      new LeafTool @closestEdge
+    ###
     if @closestHandle?
       new EdgeTool @closestHandle
+    ###
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
@@ -36,12 +40,10 @@ class CommonTool extends Tool
       shortest = null
       layers.tool.clear()
       for handle in @node.handels
-        # console.log "handle", handle
         for edge in handle.edges
           nearestPoint = edge.curve.getNearestPoint(point)
           break unless nearestPoint?
           nearestPoint = P nearestPoint
-          #console.log nearestPoint
           dist = point.distance(nearestPoint)
           layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
           if dist < shortest or not shortest?
@@ -57,6 +59,71 @@ class CommonTool extends Tool
   keyDown: (e) ->
     console.log(@node) if e.which is 119
 
+class LeafTool extends Tool
+  constructor: (@edge, @leaf1=null, @modifier=null) ->
+    super()
+
+  click: (e) ->
+    if @rect?
+      leaf = new ents.Leaf(@edge, @rect, @parameter)
+      new LeafTool(@edge, leaf, @modifier)
+
+  move: (e) ->
+    layers.tool.clear()
+    nearestLoc = @edge.curve.getNearestLocation(P(e))
+    return unless nearestLoc?
+    nearestLoc.parameter = @edge.curve.getParameterAt(nearestLoc._distance)
+    point = @edge.curve.getPointAt(nearestLoc.parameter, true)
+    normal = @edge.curve.getNormalAt(nearestLoc.parameter, true)
+    tangent = @edge.curve.getTangentAt(nearestLoc.parameter, true)
+    @parameter = nearestLoc.parameter
+    if @leaf1?
+      @checkSide(P(e), P(point), normal)
+      @rect = @makeRect(point, normal, tangent)
+      diff = @leaf1.parameter - @parameter
+      nearestLoc.parameter += diff
+      point = @edge.curve.getPointAt(nearestLoc.parameter, true)
+      normal = @edge.curve.getNormalAt(nearestLoc.parameter, true)
+      tangent = @edge.curve.getTangentAt(nearestLoc.parameter, true)
+      rect = @makeRect(point, normal, tangent)
+      layers.tool.drawLeaf(rect)
+      #dist = @leaf1.pos.distance(@rect.p0)
+      #@rect = @makeRect(point, normal, tangent)
+    else
+      @modifier = @checkSide(P(e), P(point), normal)
+      @rect = @makeRect(point, normal, tangent)
+    layers.tool.drawLeaf(@rect)
+
+  makeRect: (point, normal, tangent) ->
+    normal.length = ((@modifier*(@edge.opt.width/2))-(@modifier*1))
+    p0 = P(point).add(P(normal))
+
+    normal.length = @modifier*((@modifier*(@edge.opt.width/2))+(@modifier*5))
+    p1 = p0.add(P(normal))
+
+    tangent.length = 5
+    p2 = p1.add(P(tangent))
+    p3 = p0.add(P(tangent))
+
+    return {
+      p0: p0
+      p1: p1
+      p2: p2
+      p3: p3
+    }
+
+
+  checkSide: (mousePos, point, normal) ->
+    normal.length = 5
+    upperNormal = P(normal)
+    uppperDist = mousePos.distance(point.add(upperNormal))
+    normal.length = -5
+    lowerNormal = P(normal)
+    lowerDist = mousePos.distance(point.add(lowerNormal))
+    if uppperDist < lowerDist
+      return -1
+    else
+      return 1
 
 
 
@@ -101,7 +168,6 @@ class EdgeTool extends Tool
         return
     if P(e).distance(@handle.node.pos) <= 0
       return
-    # Snap to curve if close enough
     point = P(e)
     snapPoint = @snap(point)
     point = snapPoint.point if snapPoint?
@@ -114,7 +180,6 @@ class EdgeTool extends Tool
     for edge in ents.edges
       nearestLocation = edge.curve.getNearestLocation(orig)
       continue unless nearestLocation?
-      #console.log "nearestLocation" + nearestLocation
       newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true))
       dist = newPoint.distance(orig)
       if dist < 10
@@ -130,8 +195,6 @@ class EdgeTool extends Tool
       return null
 
   settle: (curve) ->
-    curveBefore = @curve
-    endNodeBefore = @endNode
     @check(curve)
     @intersection = null
     @endNode = null
@@ -214,7 +277,6 @@ class EdgeTool extends Tool
 
     snapPoint = @snap curve.p3
     if snapPoint?
-      console.log "snapped to", snapPoint.point
       snapPoint._point = new paper.Point(snapPoint.point)
       intersections.push snapPoint
 
@@ -229,8 +291,6 @@ class EdgeTool extends Tool
           shortest = dist
           selected = cross
 
-
-    console.log "selected", selected
 
     # If closest found make a new curve
     if selected?
