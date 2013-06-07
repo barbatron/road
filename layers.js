@@ -50,14 +50,6 @@
       return c.attr("stroke", color);
     };
 
-    Layer.prototype.drawStraightRoad = function(line) {
-      var c;
-
-      c = this.ctx.path("M " + line.p0.x + " " + line.p0.y + " L " + line.p1.x + " " + line.p1.y);
-      c.attr("stroke", "#777");
-      return c.attr("stroke-width", "9");
-    };
-
     Layer.prototype.drawHandle = function(handle) {
       var c;
 
@@ -76,27 +68,15 @@
       return c.attr("fill", color);
     };
 
-    Layer.prototype.drawRoad = function(road, color) {
+    Layer.prototype.drawRoad = function(edge, color) {
       var beizer, c;
 
       if (color == null) {
         color = "#777";
       }
-      beizer = road.curve;
+      beizer = edge.curve;
       c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
       c.attr("stroke-width", "6");
-      c.attr("stroke", color);
-      return c;
-    };
-
-    Layer.prototype.drawRoadLine = function(road, color) {
-      var c;
-
-      if (color == null) {
-        color = "#777";
-      }
-      c = this.ctx.path("M " + road.edge.line.p0.x + "\n  " + road.edge.line.p0.y + "\nL " + road.edge.line.p1.x + "\n  " + road.edge.line.p1.y);
-      c.attr("stroke-width", "9");
       c.attr("stroke", color);
       return c;
     };

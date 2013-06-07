@@ -294,8 +294,6 @@ r req[0], ->
         p3: left[3]
     }
 
-
-
   root.curveLen = (c) ->
     #console.log "curve", c.p0, c.p3
     prev = c.getLocationAt(0.001, true).point

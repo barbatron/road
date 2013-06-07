@@ -25,7 +25,7 @@ class CommonTool extends Tool
     layers.tool.clear()
   click: () ->
     if @closestHandle?
-      new RoadTool @closestHandle
+      new EdgeTool @closestHandle
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
@@ -38,7 +38,7 @@ class CommonTool extends Tool
       for handle in @node.handels
         # console.log "handle", handle
         for edge in handle.edges
-          nearestPoint = edge.road?.curve.getNearestPoint(point)
+          nearestPoint = edge.curve.getNearestPoint(point)
           break unless nearestPoint?
           nearestPoint = P nearestPoint
           #console.log nearestPoint
@@ -51,7 +51,7 @@ class CommonTool extends Tool
             else
               @closestHandle = edge.to.inverse
             layers.tool.clear()
-            layers.tool.drawRoad(edge.road, "rgba(255,30,30,0.5)")
+            layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)")
 
   keyDown: (e) ->
     console.log(@node) if e.which is 119
@@ -61,7 +61,7 @@ class CommonTool extends Tool
 
 
 
-class RoadTool extends Tool
+class EdgeTool extends Tool
   constructor: (@handle = null) ->
     super()
     @endNode = null
@@ -71,7 +71,7 @@ class RoadTool extends Tool
       if @intersection? and not @endNode?
         @endNode = ents.splitRoad(@intersection)
       nextHandle = ents.makeRoad(@handle, @curve, @endNode)
-      tools.current = new RoadTool(nextHandle)
+      tools.current = new EdgeTool(nextHandle)
 
   over: (ent, e) ->
     if ent instanceof ents.Node
@@ -101,8 +101,8 @@ class RoadTool extends Tool
       return
     # Snap to curve if close enough
     point = P(e)
-    for road in ents.roads
-      nearestPoint = road.curve.getNearestPoint(P(e))
+    for edge in ents.edges
+      nearestPoint = edge.curve.getNearestPoint(P(e))
       break unless nearestPoint?
       newPoint = P(nearestPoint)
       dist = newPoint.distance(P(e))
@@ -193,10 +193,10 @@ class RoadTool extends Tool
 
     # Find all intersections
     intersections = []
-    for road in ents.roads
-      for inter in curve.getIntersections(road.curve)
-        unless @intersectingPrevRoad(road)
-          inter.road = road
+    for edge in ents.edges
+      for inter in curve.getIntersections(edge.curve)
+        unless @intersectingPrevRoad(edge)
+          inter.edge = edge
           intersections.push inter
 
     # Find intersection closest to start node
@@ -218,9 +218,9 @@ class RoadTool extends Tool
     else
       return null
 
-  intersectingPrevRoad: (road) ->
+  intersectingPrevRoad: (otherEdge) ->
     for edge in @handle.node.edges()
-      if edge.road is road
+      if edge is otherEdge
         return true
     return false
 
@@ -245,7 +245,7 @@ class RoadTool extends Tool
 
     # Check if the curve should be reversed
     if isBackward
-      new RoadTool(@handle.inverse)
+      new EdgeTool(@handle.inverse)
 
     # It seems ok to make a curve, lets cache the radius
     len = curveLen curve
@@ -260,14 +260,11 @@ class RoadTool extends Tool
       layers.tool.clear()
       layers.tool.drawBeizer @curve, @color()
       for edge in @handle.inverse.edges
-        layers.tool.drawRoad(edge.road, "rgba(255,30,30,0.5)")
-
-  keyDown: (e) ->
-    tools.current = new StraightRoadTool(@node) if e.which is 17
+        layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)")
 
 
 
 root.tools = {}
-root.tools.RoadTool = RoadTool
+root.tools.EdgeTool = EdgeTool
 root.tools.CommonTool = CommonTool
 

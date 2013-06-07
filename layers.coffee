@@ -39,11 +39,6 @@ class Layer
     c.attr "stroke-width", "7"
     c.attr("stroke", color)
 
-  drawStraightRoad:  (line) ->
-    c = @ctx.path("M #{line.p0.x} #{line.p0.y} L #{line.p1.x} #{line.p1.y}")
-    c.attr("stroke", "#777")
-    c.attr "stroke-width", "9"
-
   drawHandle: (handle) ->
     c = @ctx.circle(handle.pos.x, handle.pos.y, 4)
     c.attr("fill", "#3f3");
@@ -53,8 +48,8 @@ class Layer
     c = @ctx.circle(pos.x, pos.y, 4)
     c.attr("fill", color);
     
-  drawRoad: (road, color="#777") ->
-    beizer = road.curve
+  drawRoad: (edge, color="#777") ->
+    beizer = edge.curve
     c = @ctx.path """
       M #{beizer.p0.x} #{beizer.p0.y}
       C #{beizer.p1.x} #{beizer.p1.y}
@@ -65,16 +60,6 @@ class Layer
     c.attr "stroke", color
     return c
 
-  drawRoadLine: (road, color="#777") ->
-    c = @ctx.path """
-      M #{road.edge.line.p0.x}
-        #{road.edge.line.p0.y}
-      L #{road.edge.line.p1.x}
-        #{road.edge.line.p1.y}
-      """
-    c.attr "stroke-width", "9"
-    c.attr "stroke", color
-    return c
 
   remove: (id) ->
     @ctx.getById(id).remove()
