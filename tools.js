@@ -52,7 +52,7 @@
     };
 
     CommonTool.prototype.move = function(e) {
-      var dist, edge, edges, handle, nearestPoint, point, shortest, _i, _len, _ref, _results;
+      var dist, edge, edges, handle, nearestPoint, point, shortest, _i, _j, _len, _len1, _ref, _ref1;
 
       if (this.node != null) {
         point = P(e);
@@ -60,40 +60,32 @@
         shortest = null;
         layers.tool.clear();
         _ref = this.node.handels;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           handle = _ref[_i];
-          _results.push((function() {
-            var _j, _len1, _ref1, _results1;
-
-            _ref1 = handle.edges;
-            _results1 = [];
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              edge = _ref1[_j];
-              nearestPoint = edge.curve.getNearestPoint(point);
-              if (nearestPoint == null) {
-                break;
-              }
-              nearestPoint = P(nearestPoint);
-              dist = point.distance(nearestPoint);
-              layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)");
-              if (dist < shortest || (shortest == null)) {
-                shortest = dist;
-                if (edge.from.node === this.node) {
-                  this.closestHandle = edge.from.inverse;
-                } else {
-                  this.closestHandle = edge.to.inverse;
-                }
-                layers.tool.clear();
-                _results1.push(layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)"));
+          _ref1 = handle.edges;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            edge = _ref1[_j];
+            nearestPoint = edge.curve.getNearestPoint(point);
+            if (nearestPoint == null) {
+              break;
+            }
+            nearestPoint = P(nearestPoint);
+            dist = point.distance(nearestPoint);
+            layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)");
+            if (dist < shortest || (shortest == null)) {
+              shortest = dist;
+              this.closestEdge = edge;
+              if (edge.from.node === this.node) {
+                this.closestHandle = edge.from.inverse;
               } else {
-                _results1.push(void 0);
+                this.closestHandle = edge.to.inverse;
               }
             }
-            return _results1;
-          }).call(this));
+          }
         }
-        return _results;
+        if (this.closestEdge != null) {
+          return layers.tool.drawRoad(this.closestEdge, "rgba(255,30,30,0.5)");
+        }
       }
     };
 
@@ -122,9 +114,10 @@
 
       if (this.curve != null) {
         if ((this.intersection != null) && (this.endNode == null)) {
+          console.log("splitting at", this.intersection);
           this.endNode = ents.splitRoad(this.intersection);
         }
-        nextHandle = ents.makeRoad(this.handle, this.curve, this.endNode);
+        nextHandle = ents.makeRoad(this.handle, this.curve, this.endNode, this.continous);
         return tools.current = new EdgeTool(nextHandle);
       }
     };
@@ -149,7 +142,7 @@
     };
 
     EdgeTool.prototype.move = function(e) {
-      var closest, curve, dist, edge, nearestPoint, newPoint, point, _i, _len, _ref;
+      var curve, point, snapPoint;
 
       if (this.endNode != null) {
         if (L(this.endNode.pos, P(e)).length() > 10) {
@@ -162,29 +155,48 @@
         return;
       }
       point = P(e);
-      _ref = ents.edges;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        edge = _ref[_i];
-        nearestPoint = edge.curve.getNearestPoint(P(e));
-        if (nearestPoint == null) {
-          break;
-        }
-        newPoint = P(nearestPoint);
-        dist = newPoint.distance(P(e));
-        if (dist < 10) {
-          if (dist < closest || (typeof closest === "undefined" || closest === null)) {
-            closest = dist;
-            point = newPoint;
-          }
-        }
+      snapPoint = this.snap(point);
+      if (snapPoint != null) {
+        point = snapPoint.point;
       }
       curve = C.fromHandle(this.handle, point);
       this.settle(curve);
       return this.draw();
     };
 
+    EdgeTool.prototype.snap = function(orig) {
+      var closest, dist, edge, location, nearestLocation, newPoint, _i, _len, _ref;
+
+      location = null;
+      _ref = ents.edges;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        edge = _ref[_i];
+        nearestLocation = edge.curve.getNearestLocation(orig);
+        if (nearestLocation == null) {
+          continue;
+        }
+        newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true));
+        dist = newPoint.distance(orig);
+        if (dist < 10) {
+          if (dist < closest || (typeof closest === "undefined" || closest === null)) {
+            closest = dist;
+            location = {
+              point: newPoint,
+              edge: edge,
+              location: nearestLocation
+            };
+          }
+        }
+      }
+      if (location != null) {
+        return location;
+      } else {
+        return null;
+      }
+    };
+
     EdgeTool.prototype.settle = function(curve) {
-      var curveBefore, edge1, edge2, endNodeBefore, intersectingNodeLength, intersectingRoadLength, iteration, unsettled, _i, _j, _len, _len1, _ref, _ref1;
+      var curveBefore, edge1, edge2, endNodeBefore, intersectingNodeLength, intersectingRoadLength, iteration, unsettled, _i, _j, _len, _len1, _ref, _ref1, _results;
 
       curveBefore = this.curve;
       endNodeBefore = this.endNode;
@@ -225,6 +237,7 @@
       }
       if (this.endNode != null) {
         _ref = this.handle.node.edges();
+        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           edge1 = _ref[_i];
           _ref1 = this.endNode.edges();
@@ -238,12 +251,11 @@
           }
           if (this.curve == null) {
             break;
+          } else {
+            _results.push(void 0);
           }
         }
-      }
-      if (this.curve == null) {
-        this.curve = curveBefore;
-        return this.endNode = endNodeBefore;
+        return _results;
       }
     };
 
@@ -260,7 +272,7 @@
         }
         point = this.curve.getNearestPoint(node.pos);
         distPntToNode = L(point, node.pos).length();
-        if (distPntToNode < 10) {
+        if (distPntToNode < 20) {
           distFromCurveStart = L(this.handle.node.pos, point).length();
           if (distFromCurveStart < shortest || (typeof shortest === "undefined" || shortest === null)) {
             selected = node;
@@ -277,7 +289,7 @@
     };
 
     EdgeTool.prototype.intersecting = function(curve) {
-      var cross, dist, edge, inter, intersections, pos, selected, shortest, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+      var cross, dist, edge, inter, intersections, pos, selected, shortest, snapPoint, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
 
       this.intersection = null;
       intersections = [];
@@ -289,9 +301,17 @@
           inter = _ref1[_j];
           if (!this.intersectingPrevRoad(edge)) {
             inter.edge = edge;
+            inter.location = {};
+            inter.location.parameter = edge.curve.getParameterOf(inter._point);
             intersections.push(inter);
           }
         }
+      }
+      snapPoint = this.snap(curve.p3);
+      if (snapPoint != null) {
+        console.log("snapped to", snapPoint.point);
+        snapPoint._point = new paper.Point(snapPoint.point);
+        intersections.push(snapPoint);
       }
       selected = null;
       for (_k = 0, _len2 = intersections.length; _k < _len2; _k++) {
@@ -308,6 +328,7 @@
           }
         }
       }
+      console.log("selected", selected);
       if (selected != null) {
         pos = P(selected.p.x, selected.p.y);
         this.intersection = selected;

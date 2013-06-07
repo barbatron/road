@@ -46,12 +46,13 @@ class CommonTool extends Tool
           layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
           if dist < shortest or not shortest?
             shortest = dist
+            @closestEdge = edge
             if edge.from.node is @node
               @closestHandle = edge.from.inverse
             else
               @closestHandle = edge.to.inverse
-            layers.tool.clear()
-            layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)")
+      if @closestEdge?
+        layers.tool.drawRoad(@closestEdge, "rgba(255,30,30,0.5)")
 
   keyDown: (e) ->
     console.log(@node) if e.which is 119
@@ -69,8 +70,9 @@ class EdgeTool extends Tool
   click: (e) =>
     if @curve?
       if @intersection? and not @endNode?
+        console.log "splitting at", @intersection
         @endNode = ents.splitRoad(@intersection)
-      nextHandle = ents.makeRoad(@handle, @curve, @endNode)
+      nextHandle = ents.makeRoad(@handle, @curve, @endNode, @continous)
       tools.current = new EdgeTool(nextHandle)
 
   over: (ent, e) ->
@@ -101,18 +103,31 @@ class EdgeTool extends Tool
       return
     # Snap to curve if close enough
     point = P(e)
-    for edge in ents.edges
-      nearestPoint = edge.curve.getNearestPoint(P(e))
-      break unless nearestPoint?
-      newPoint = P(nearestPoint)
-      dist = newPoint.distance(P(e))
-      if dist < 10
-        if dist < closest or not closest?
-          closest = dist
-          point = newPoint
+    snapPoint = @snap(point)
+    point = snapPoint.point if snapPoint?
     curve = C.fromHandle @handle, point
     @settle(curve)
     @draw()
+
+  snap: (orig) ->
+    location = null
+    for edge in ents.edges
+      nearestLocation = edge.curve.getNearestLocation(orig)
+      continue unless nearestLocation?
+      #console.log "nearestLocation" + nearestLocation
+      newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true))
+      dist = newPoint.distance(orig)
+      if dist < 10
+        if dist < closest or not closest?
+          closest = dist
+          location =
+            point: newPoint
+            edge: edge
+            location: nearestLocation
+    if location?
+      return location
+    else
+      return null
 
   settle: (curve) ->
     curveBefore = @curve
@@ -165,10 +180,6 @@ class EdgeTool extends Tool
             break
         break unless @curve?
 
-    unless @curve?
-      @curve = curveBefore
-      @endNode = endNodeBefore
-
   intersectingNode: (curve) ->
     @endNode = null
 
@@ -177,7 +188,7 @@ class EdgeTool extends Tool
       continue if node is @handle.node
       point = @curve.getNearestPoint(node.pos)
       distPntToNode = L(point, node.pos).length()
-      if distPntToNode < 10
+      if distPntToNode < 20
         distFromCurveStart = L(@handle.node.pos, point).length()
         if distFromCurveStart < shortest or not shortest?
           selected = node
@@ -197,7 +208,15 @@ class EdgeTool extends Tool
       for inter in curve.getIntersections(edge.curve)
         unless @intersectingPrevRoad(edge)
           inter.edge = edge
+          inter.location = {}
+          inter.location.parameter = edge.curve.getParameterOf(inter._point)
           intersections.push inter
+
+    snapPoint = @snap curve.p3
+    if snapPoint?
+      console.log "snapped to", snapPoint.point
+      snapPoint._point = new paper.Point(snapPoint.point)
+      intersections.push snapPoint
 
     # Find intersection closest to start node
     selected = null
@@ -209,6 +228,9 @@ class EdgeTool extends Tool
         if dist < shortest or not shortest?
           shortest = dist
           selected = cross
+
+
+    console.log "selected", selected
 
     # If closest found make a new curve
     if selected?

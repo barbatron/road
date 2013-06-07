@@ -68,6 +68,7 @@
           console.log("papline", papLine);
         }
         p = papLine.getNearestPoint(this.pa());
+        layers.tool.clear();
         layers.tool.drawDot(p, "#000");
         return P(p.x + (p.x - this.x), p.y + (p.y - this.y));
       };

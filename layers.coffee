@@ -49,15 +49,18 @@ class Layer
     c.attr("fill", color);
     
   drawRoad: (edge, color="#777") ->
-    beizer = edge.curve
     c = @ctx.path """
-      M #{beizer.p0.x} #{beizer.p0.y}
-      C #{beizer.p1.x} #{beizer.p1.y}
-        #{beizer.p2.x} #{beizer.p2.y}
-        #{beizer.p3.x} #{beizer.p3.y}
+      M #{edge.curve.p0.x} #{edge.curve.p0.y}
+      C #{edge.curve.p1.x} #{edge.curve.p1.y}
+        #{edge.curve.p2.x} #{edge.curve.p2.y}
+        #{edge.curve.p3.x} #{edge.curve.p3.y}
       """
     c.attr "stroke-width", "6"
     c.attr "stroke", color
+
+    p = edge.curve.getPointAt(0.5, true)
+    t = @ctx.text(p.x, p.y, edge.id);
+
     return c
 
 
@@ -81,7 +84,9 @@ class Layer
 
   addNodeSnapper: (node) ->
     c = @ctx.circle(node.pos.x, node.pos.y, 10)
-    c.attr("fill", "rgba(0,0,0,0)");
+
+    c.attr("fill", "rgba(0,0,0,0.1)");
+    c.attr("stroke", "rgba(0,0,0,0.15)");
     c.mouseover (e) => node.over(e)
     c.mouseout (e) => node.out(e)
 

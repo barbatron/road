@@ -7,13 +7,18 @@ redrawAll = () ->
     for ent in entityType
       ent.draw()
 
-class Node
+class Entity
+  constructor: () ->
+    @id = _.uniqueId()
+
+class Node extends Entity
   constructor: (@pos, target=null) ->
+    super()
     @handels = []
-    new Handle(@, target) if target?
+    new Handle(this, target) if target?
     #root.nodes[@pos.x] = [] unless nodes[@pos.x]?
     #root.nodes[@pos.x][@pos.y] = this
-    layers.nodeSnap.addNodeSnapper(@)
+    layers.nodeSnap.addNodeSnapper(this)
     @draw()
     ents.nodes.push this
   addHandle: (handle) ->
@@ -21,12 +26,12 @@ class Node
       @handels.push handle
     return handle
   draw: ->
-    layers.main.drawNode(@)
+    layers.main.drawNode(this)
   over: (e) ->
-    tools.current.over?(@, e)
+    tools.current.over?(this, e)
     #layers.tool.drawNode(@, true)
   out: (e) ->
-    tools.current.out?(@, e)
+    tools.current.out?(this, e)
     layers.tool.clear()
   edges: ->
     rtnArr = []
@@ -35,37 +40,43 @@ class Node
         rtnArr.push edge
     return rtnArr
 
-class Handle
+class Handle  extends Entity
   constructor: (@node, @pos, @inverse = null) ->
+    super()
     @line = L(@node.pos,@pos)
     @edges = []
     unless @inverse?
       #mirrTarg = @pos.mirror(@line.perp())
-      @inverse = new Handle(@node, @line.grow(-1).p1, @)
+      @inverse = new Handle(@node, @line.grow(-1).p1, this)
     @draw()
-    @node.addHandle(@)
+    @node.addHandle(this)
     ents.handels.push this
   draw: ->
     # layers.main.drawHandle(@)
   addEdge: (edge)->
+    unless edge instanceof Edge
+      console.error("wtf mate!")
+      console.stack()
+      throw new Error("HEY!")
     @edges.push edge
   removeEdge: (edge)->
-    @edges = _.without(edge)
+    @edges.splice(@edges.indexOf(edge), 1)
 
-class Edge
+class Edge extends Entity
   defaults =
     color: "#777"
   constructor: (@from, @to, @curve) ->
+    super()
     @opt = _.defaults(defaults)
     @line = L(@from.node.pos,@to.node.pos)
-    @from.addEdge(@)
-    @to.addEdge(@)
+    @from.addEdge(this)
+    @to.addEdge(this)
     @draw()
     ents.edges.push this
   destroy: () ->
-    @from.removeEdge(@)
-    @to.removeEdge(@)
-    ents.edges = _.without ents.edges, @
+    @from.removeEdge(this)
+    @to.removeEdge(this)
+    ents.edges = _.without ents.edges, this
     redrawAll()
   same: (edge) ->
     if @to is edge.to or
@@ -75,20 +86,22 @@ class Edge
     else
       return false
   draw: () ->
-    layers.main.drawRoad(@)
+    layers.main.drawRoad(this)
 
-makeRoad = (oldHandle, curve, newNode=null) ->
+makeRoad = (oldHandle, curve, newNode=null, continous) ->
   newNode = new Node(curve.p3) unless newNode?
   newHandle = new Handle(newNode, curve.p2)
-  new Edge(oldHandle, newHandle, curve)
+  if continous
+    prevHandle = oldHandle
+  else
+    prevHandle = new Handle(oldHandle.node, curve.p1)
+  new Edge(prevHandle, newHandle, curve)
   return newHandle.inverse
 
 splitRoad = (intersection) ->
   edgeToSplit = intersection.edge
   curveToSplit = intersection.edge.curve
-  intersectionPoint = intersection._point
-  param = curveToSplit.getParameterOf(intersectionPoint)
-  curves = split curveToSplit, param
+  curves = split curveToSplit, intersection.location.parameter
 
 
   newNode =   new Node curves.left.p3
@@ -131,6 +144,7 @@ root.ents.makeRoad = makeRoad
 root.ents.splitRoad = splitRoad
 root.ents.Node = Node
 root.ents.Handle = Handle
+root.ents.Edge = Edge
 root.ents.edges = []
 root.ents.nodes = []
 root.ents.handels = []

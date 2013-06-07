@@ -56,6 +56,7 @@ r req[0], ->
         console.log "line", line
         console.log "papline", papLine
       p = papLine.getNearestPoint(@pa())
+      layers.tool.clear()
       layers.tool.drawDot p, "#000"
       return P(p.x + (p.x - @x), p.y + (p.y - @y))
 

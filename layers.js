@@ -69,15 +69,16 @@
     };
 
     Layer.prototype.drawRoad = function(edge, color) {
-      var beizer, c;
+      var c, p, t;
 
       if (color == null) {
         color = "#777";
       }
-      beizer = edge.curve;
-      c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
+      c = this.ctx.path("M " + edge.curve.p0.x + " " + edge.curve.p0.y + "\nC " + edge.curve.p1.x + " " + edge.curve.p1.y + "\n  " + edge.curve.p2.x + " " + edge.curve.p2.y + "\n  " + edge.curve.p3.x + " " + edge.curve.p3.y);
       c.attr("stroke-width", "6");
       c.attr("stroke", color);
+      p = edge.curve.getPointAt(0.5, true);
+      t = this.ctx.text(p.x, p.y, edge.id);
       return c;
     };
 
@@ -108,7 +109,8 @@
         _this = this;
 
       c = this.ctx.circle(node.pos.x, node.pos.y, 10);
-      c.attr("fill", "rgba(0,0,0,0)");
+      c.attr("fill", "rgba(0,0,0,0.1)");
+      c.attr("stroke", "rgba(0,0,0,0.15)");
       c.mouseover(function(e) {
         return node.over(e);
       });
