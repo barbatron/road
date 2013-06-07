@@ -44,7 +44,6 @@
     Node.prototype.addHandle = function(handle) {
       if (this.handels.indexOf(handle === -1)) {
         this.handels.push(handle);
-        this.handels.push(handle.inverse);
       }
       return handle;
     };
@@ -87,9 +86,7 @@
       ents.handels.push(this);
     }
 
-    Handle.prototype.draw = function() {
-      return layers.main.drawHandle(this);
-    };
+    Handle.prototype.draw = function() {};
 
     Handle.prototype.addEdge = function(edge) {
       return this.edges.push(edge);
@@ -117,6 +114,8 @@
     };
 
     Edge.prototype.destroy = function() {
+      this.from.removeEdge(this);
+      this.to.removeEdge(this);
       return this.road.destroy();
     };
 
@@ -197,8 +196,6 @@
       p3: edgeToSplit.to.node.pos
     });
     new Road(edge2, curve);
-    edgeToSplit.to.removeEdge(edgeToSplit);
-    edgeToSplit.from.removeEdge(edgeToSplit);
     edgeToSplit.destroy();
     return newNode;
   };

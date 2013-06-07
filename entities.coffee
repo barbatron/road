@@ -19,7 +19,6 @@ class Node
   addHandle: (handle) ->
     if @handels.indexOf handle is -1
       @handels.push handle
-      @handels.push handle.inverse
     return handle
   draw: ->
     layers.main.drawNode(@)
@@ -41,7 +40,7 @@ class Handle
     @node.addHandle(@)
     ents.handels.push this
   draw: ->
-    layers.main.drawHandle(@)
+    # layers.main.drawHandle(@)
   addEdge: (edge)->
     @edges.push edge
   removeEdge: (edge)->
@@ -54,6 +53,8 @@ class Edge
     @to.addEdge(@)
   addRoad: (road) -> @road = road
   destroy: () ->
+    @from.removeEdge(@)
+    @to.removeEdge(@)
     @road.destroy()
 
 class Road
@@ -112,9 +113,6 @@ splitRoad = (intersection) ->
     p2: curves.right.p1
     p3: edgeToSplit.to.node.pos
   new Road(edge2, curve)
-
-  edgeToSplit.to.removeEdge(edgeToSplit)
-  edgeToSplit.from.removeEdge(edgeToSplit)
 
   edgeToSplit.destroy()
 

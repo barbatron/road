@@ -54,8 +54,14 @@ r req[0], ->
     $(window).keydown (e) -> tools.current.keyDown?(e)
 
     # Debug stuff goes here
-    new ents.Node(P(100,80),P(100,10))
-    new ents.Node(P(151,194),P(115,198))
+    node = new ents.Node(P(100,80))
+    handle = new ents.Handle(node, P(150, 85))
+    curve = C
+      p0: P(100,80)
+      p1: P(150,85)
+      p2: P(200,200)
+      p3: P(210,210)
+    ents.makeRoad(handle, curve)
 
     new tools.CommonTool()
 

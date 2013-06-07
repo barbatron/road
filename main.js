@@ -15,6 +15,8 @@
   r(req[0], function() {
     return r(req[1], function() {
       return r(req[2], function() {
+        var curve, handle, node;
+
         $("#nodeSnap").click(function(e) {
           var _base;
 
@@ -30,8 +32,15 @@
 
           return typeof (_base = tools.current).keyDown === "function" ? _base.keyDown(e) : void 0;
         });
-        new ents.Node(P(100, 80), P(100, 10));
-        new ents.Node(P(151, 194), P(115, 198));
+        node = new ents.Node(P(100, 80));
+        handle = new ents.Handle(node, P(150, 85));
+        curve = C({
+          p0: P(100, 80),
+          p1: P(150, 85),
+          p2: P(200, 200),
+          p3: P(210, 210)
+        });
+        ents.makeRoad(handle, curve);
         return new tools.CommonTool();
       });
     });

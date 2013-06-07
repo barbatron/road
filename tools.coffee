@@ -23,16 +23,38 @@ class CommonTool extends Tool
   constructor: () ->
     super()
     layers.tool.clear()
+  click: () ->
+    if @closestHandle?
+      new RoadTool @closestHandle
   over: (ent, e) ->
     if ent instanceof ents.Node
-      shortest = 9007199254740992
-      selected = null
-      for handle in ent.handels
-        dist = P(e).distance(handle.pos)
-        if dist < shortest
-          selected = handle
-          shortest = dist
-      new RoadTool(selected)
+      @node = ent
+  move: (e) ->
+    if @node?
+      point = P(e)
+      edges = []
+      shortest = null
+      layers.tool.clear()
+      for handle in @node.handels
+        console.log "handle", handle
+        for edge in handle.edges
+          nearestPoint = P edge.road?.curve.getNearestPoint(point)
+          console.log nearestPoint
+          dist = point.distance(nearestPoint)
+          layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
+          if dist < shortest or not shortest?
+            shortest = dist
+            if edge.from.node is @node
+              @closestHandle = edge.from.inverse
+            else
+              @closestHandle = edge.to.inverse
+            layers.tool.clear()
+            layers.tool.drawRoad(edge.road, "rgba(255,30,30,0.5)")
+
+
+
+
+
 
 class RoadTool extends Tool
   constructor: (@handle = null) ->
@@ -202,75 +224,6 @@ class RoadTool extends Tool
 
   keyDown: (e) ->
     tools.current = new StraightRoadTool(@node) if e.which is 17
-
-
-class SharpTurnTool extends Tool
-  constructor: (@handle) ->
-    super()
-
-  click: (e) ->
-    if @line?
-      #layers.main.drawStraightRoad(@line)
-      nextHandle = ents.makeRoad(@handle, @line.toCurve(), @endNode)
-      new RoadTool(nextHandle)
-
-  move: (e) ->
-    unless @endNode?
-      curve = C.fromHandle @handle, P(e)
-      @line = L(@handle.node.pos, P(e))
-      @check(curve)
-      @draw()
-
-  over: (ent, e) ->
-    if ent instanceof ents.Node
-      if ent is @handle.node
-        return
-      curve = C.fromHandle @handle, ent.pos
-      @line = L @handle.node.pos, ent.pos
-      @check(curve)
-      @endNode = ent
-      @draw()
-
-  out: (ent, e) ->
-    if ent instanceof ents.Node
-      @endNode = null
-
-  check: (curve) ->
-    angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
-    if angle <= Math.PI/2
-      unless  L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
-        new RoadTool(@handle)
-
-  draw: () ->
-    layers.tool.clear()
-    layers.tool.drawStraightRoad(@line)
-
-
-class StraightRoadTool extends Tool
-  constructor: (@node = null) ->
-    super()
-  click: (e) ->
-    line = @straightLineFromNode(@node, P(e))
-    layers.main.drawLine line 
-    node = new ents.Node line.p1, line.p0
-    tools.current = new RoadTool(node)
-  move: (e) ->
-    layers.tool.clear()
-    line = @straightLineFromNode(@node, P(e))        
-    layers.tool.drawLine line
-  straightLineFromNode: (node, pos) ->
-    line = L(node.pos, node.ctrl).growAdd(1000)
-    loc = jsBezier.nearestPointOnCurve(pos, @lineToBez(line)).location
-    return L(node.pos, node.ctrl).growAdd(1000*loc)
-  lineToBez: (l) ->
-    return [
-      {x: l.p0.x, y: l.p0.y}
-      {x: l.p0.x, y: l.p0.y}
-      {x: l.p1.x, y: l.p1.y}
-      {x: l.p1.x, y: l.p1.y}
-    ]
-  keyUp: (e) ->
-    tools.current = new RoadTool(@node) if e.which is 17
 
 
 
