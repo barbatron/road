@@ -60,10 +60,14 @@
       };
 
       Point.prototype.mirror = function(line) {
-        var p;
+        var p, papLine;
 
-        line = new paper.Path.Line(line.p0.pa(), line.p1.pa());
-        p = line.getNearestPoint(this.pa());
+        papLine = new paper.Path.Line(line.p0.pa(), line.p1.pa());
+        if (line.p0 === line.p1) {
+          console.log("line", line);
+          console.log("papline", papLine);
+        }
+        p = papLine.getNearestPoint(this.pa());
         layers.tool.drawDot(p, "#000");
         return P(p.x + (p.x - this.x), p.y + (p.y - this.y));
       };
@@ -412,3 +416,7 @@
   });
 
 }).call(this);
+
+/*
+//@ sourceMappingURL=geometry.map
+*/

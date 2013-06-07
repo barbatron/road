@@ -63,7 +63,6 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           handle = _ref[_i];
-          console.log("handle", handle);
           _results.push((function() {
             var _j, _len1, _ref1, _ref2, _results1;
 
@@ -71,8 +70,11 @@
             _results1 = [];
             for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
               edge = _ref1[_j];
-              nearestPoint = P((_ref2 = edge.road) != null ? _ref2.curve.getNearestPoint(point) : void 0);
-              console.log(nearestPoint);
+              nearestPoint = (_ref2 = edge.road) != null ? _ref2.curve.getNearestPoint(point) : void 0;
+              if (nearestPoint == null) {
+                break;
+              }
+              nearestPoint = P(nearestPoint);
               dist = point.distance(nearestPoint);
               layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)");
               if (dist < shortest || (shortest == null)) {
@@ -92,6 +94,12 @@
           }).call(this));
         }
         return _results;
+      }
+    };
+
+    CommonTool.prototype.keyDown = function(e) {
+      if (e.which === 119) {
+        return console.log(this.node);
       }
     };
 
@@ -116,7 +124,6 @@
         if ((this.intersection != null) && (this.endNode == null)) {
           this.endNode = ents.splitRoad(this.intersection);
         }
-        layers.main.drawBeizer(this.curve);
         nextHandle = ents.makeRoad(this.handle, this.curve, this.endNode);
         return tools.current = new RoadTool(nextHandle);
       }
@@ -142,7 +149,7 @@
     };
 
     RoadTool.prototype.move = function(e) {
-      var curve;
+      var closest, curve, dist, nearestPoint, newPoint, point, road, _i, _len, _ref;
 
       if (this.endNode != null) {
         if (L(this.endNode.pos, P(e)).length() > 10) {
@@ -154,14 +161,33 @@
       if (P(e).distance(this.handle.node.pos) <= 0) {
         return;
       }
-      curve = C.fromHandle(this.handle, P(e));
+      point = P(e);
+      _ref = ents.roads;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        road = _ref[_i];
+        nearestPoint = road.curve.getNearestPoint(P(e));
+        if (nearestPoint == null) {
+          break;
+        }
+        newPoint = P(nearestPoint);
+        dist = newPoint.distance(P(e));
+        if (dist < 10) {
+          if (dist < closest || (typeof closest === "undefined" || closest === null)) {
+            closest = dist;
+            point = newPoint;
+          }
+        }
+      }
+      curve = C.fromHandle(this.handle, point);
       this.settle(curve);
       return this.draw();
     };
 
     RoadTool.prototype.settle = function(curve) {
-      var intersectingNodeLength, intersectingRoadLength, iteration, unsettled;
+      var curveBefore, edge1, edge2, endNodeBefore, intersectingNodeLength, intersectingRoadLength, iteration, unsettled, _i, _j, _len, _len1, _ref, _ref1;
 
+      curveBefore = this.curve;
+      endNodeBefore = this.endNode;
       this.check(curve);
       this.intersection = null;
       this.endNode = null;
@@ -194,8 +220,30 @@
       if (this.endNode === this.handle.node) {
         this.curve = null;
       }
-      if ((this.curve != null) && curveLen(this.curve) < 10) {
-        return this.curve = null;
+      if ((this.curve != null) && curveLen(this.curve) < 20) {
+        this.curve = null;
+      }
+      if (this.endNode != null) {
+        _ref = this.handle.node.edges();
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          edge1 = _ref[_i];
+          _ref1 = this.endNode.edges();
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            edge2 = _ref1[_j];
+            if (edge1.same(edge2)) {
+              this.curve = null;
+              this.endNode = null;
+              break;
+            }
+          }
+          if (this.curve == null) {
+            break;
+          }
+        }
+      }
+      if (this.curve == null) {
+        this.curve = curveBefore;
+        return this.endNode = endNodeBefore;
       }
     };
 
@@ -236,10 +284,10 @@
       _ref = ents.roads;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         road = _ref[_i];
-        if (road.curve != null) {
-          _ref1 = curve.getIntersections(road.curve);
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            inter = _ref1[_j];
+        _ref1 = curve.getIntersections(road.curve);
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          inter = _ref1[_j];
+          if (!this.intersectingPrevRoad(road)) {
             inter.road = road;
             intersections.push(inter);
           }
@@ -267,6 +315,19 @@
       } else {
         return null;
       }
+    };
+
+    RoadTool.prototype.intersectingPrevRoad = function(road) {
+      var edge, _i, _len, _ref;
+
+      _ref = this.handle.node.edges();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        edge = _ref[_i];
+        if (edge.road === road) {
+          return true;
+        }
+      }
+      return false;
     };
 
     RoadTool.prototype.color = function() {
@@ -340,3 +401,7 @@
   root.tools.CommonTool = CommonTool;
 
 }).call(this);
+
+/*
+//@ sourceMappingURL=tools.map
+*/

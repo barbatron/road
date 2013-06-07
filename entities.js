@@ -67,6 +67,22 @@
       return layers.tool.clear();
     };
 
+    Node.prototype.edges = function() {
+      var edge, handle, rtnArr, _i, _j, _len, _len1, _ref, _ref1;
+
+      rtnArr = [];
+      _ref = this.handels;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        handle = _ref[_i];
+        _ref1 = handle.edges;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          edge = _ref1[_j];
+          rtnArr.push(edge);
+        }
+      }
+      return rtnArr;
+    };
+
     return Node;
 
   })();
@@ -117,6 +133,14 @@
       this.from.removeEdge(this);
       this.to.removeEdge(this);
       return this.road.destroy();
+    };
+
+    Edge.prototype.same = function(edge) {
+      if (this.to === edge.to || this.to === edge.from || this.from === edge.from) {
+        return true;
+      } else {
+        return false;
+      }
     };
 
     return Edge;
@@ -229,3 +253,7 @@
   root.ents.handels = [];
 
 }).call(this);
+
+/*
+//@ sourceMappingURL=entities.map
+*/

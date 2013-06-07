@@ -46,7 +46,7 @@
         color = "#777";
       }
       c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
-      c.attr("stroke-width", "9");
+      c.attr("stroke-width", "7");
       return c.attr("stroke", color);
     };
 
@@ -84,7 +84,7 @@
       }
       beizer = road.curve;
       c = this.ctx.path("M " + beizer.p0.x + " " + beizer.p0.y + "\nC " + beizer.p1.x + " " + beizer.p1.y + "\n  " + beizer.p2.x + " " + beizer.p2.y + "\n  " + beizer.p3.x + " " + beizer.p3.y);
-      c.attr("stroke-width", "9");
+      c.attr("stroke-width", "6");
       c.attr("stroke", color);
       return c;
     };
@@ -188,3 +188,7 @@
   new PaperLayer('papa');
 
 }).call(this);
+
+/*
+//@ sourceMappingURL=layers.map
+*/

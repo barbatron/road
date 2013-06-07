@@ -51,8 +51,11 @@ r req[0], ->
       return @pap
 
     mirror: (line) ->
-      line = new paper.Path.Line(line.p0.pa(), line.p1.pa())
-      p = line.getNearestPoint(@pa())
+      papLine = new paper.Path.Line(line.p0.pa(), line.p1.pa())
+      if line.p0 is line.p1
+        console.log "line", line
+        console.log "papline", papLine
+      p = papLine.getNearestPoint(@pa())
       layers.tool.drawDot p, "#000"
       return P(p.x + (p.x - @x), p.y + (p.y - @y))
 

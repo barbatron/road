@@ -36,7 +36,7 @@ class Layer
         #{beizer.p2.x} #{beizer.p2.y}
         #{beizer.p3.x} #{beizer.p3.y}
       """
-    c.attr "stroke-width", "9"
+    c.attr "stroke-width", "7"
     c.attr("stroke", color)
 
   drawStraightRoad:  (line) ->
@@ -61,7 +61,7 @@ class Layer
         #{beizer.p2.x} #{beizer.p2.y}
         #{beizer.p3.x} #{beizer.p3.y}
       """
-    c.attr "stroke-width", "9"
+    c.attr "stroke-width", "6"
     c.attr "stroke", color
     return c
 

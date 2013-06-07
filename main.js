@@ -27,7 +27,7 @@
 
           return typeof (_base = tools.current).move === "function" ? _base.move(e) : void 0;
         });
-        $(window).keydown(function(e) {
+        $(window).keypress(function(e) {
           var _base;
 
           return typeof (_base = tools.current).keyDown === "function" ? _base.keyDown(e) : void 0;
@@ -64,3 +64,7 @@
   });
 
 }).call(this);
+
+/*
+//@ sourceMappingURL=main.map
+*/

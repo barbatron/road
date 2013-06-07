@@ -51,7 +51,7 @@ r req[0], ->
 
     $("#nodeSnap").click (e) -> tools.current.click?(e)
     $("#nodeSnap").mousemove (e) -> tools.current.move?(e)
-    $(window).keydown (e) -> tools.current.keyDown?(e)
+    $(window).keypress (e) -> tools.current.keyDown?(e)
 
     # Debug stuff goes here
     node = new ents.Node(P(100,80))

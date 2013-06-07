@@ -36,10 +36,12 @@ class CommonTool extends Tool
       shortest = null
       layers.tool.clear()
       for handle in @node.handels
-        console.log "handle", handle
+        # console.log "handle", handle
         for edge in handle.edges
-          nearestPoint = P edge.road?.curve.getNearestPoint(point)
-          console.log nearestPoint
+          nearestPoint = edge.road?.curve.getNearestPoint(point)
+          break unless nearestPoint?
+          nearestPoint = P nearestPoint
+          #console.log nearestPoint
           dist = point.distance(nearestPoint)
           layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
           if dist < shortest or not shortest?
@@ -50,6 +52,9 @@ class CommonTool extends Tool
               @closestHandle = edge.to.inverse
             layers.tool.clear()
             layers.tool.drawRoad(edge.road, "rgba(255,30,30,0.5)")
+
+  keyDown: (e) ->
+    console.log(@node) if e.which is 119
 
 
 
@@ -65,7 +70,6 @@ class RoadTool extends Tool
     if @curve?
       if @intersection? and not @endNode?
         @endNode = ents.splitRoad(@intersection)
-      layers.main.drawBeizer @curve
       nextHandle = ents.makeRoad(@handle, @curve, @endNode)
       tools.current = new RoadTool(nextHandle)
 
@@ -74,6 +78,7 @@ class RoadTool extends Tool
       if ent is @handle.node
         return
       curve = C.fromHandle @handle, ent.pos
+
       @settle(curve)
 
       #if ent is @intersection.road.edge.from.node or ent is @intersection.road.edge.to.node
@@ -94,11 +99,24 @@ class RoadTool extends Tool
         return
     if P(e).distance(@handle.node.pos) <= 0
       return
-    curve = C.fromHandle @handle, P(e)
+    # Snap to curve if close enough
+    point = P(e)
+    for road in ents.roads
+      nearestPoint = road.curve.getNearestPoint(P(e))
+      break unless nearestPoint?
+      newPoint = P(nearestPoint)
+      dist = newPoint.distance(P(e))
+      if dist < 10
+        if dist < closest or not closest?
+          closest = dist
+          point = newPoint
+    curve = C.fromHandle @handle, point
     @settle(curve)
     @draw()
 
   settle: (curve) ->
+    curveBefore = @curve
+    endNodeBefore = @endNode
     @check(curve)
     @intersection = null
     @endNode = null
@@ -134,8 +152,22 @@ class RoadTool extends Tool
       @curve = null
 
     # Don't make too short roads
-    if @curve? and curveLen(@curve) < 10
+    if @curve? and curveLen(@curve) < 20
       @curve = null
+
+    # Don't make edges between already conneted nodes
+    if @endNode?
+      for edge1 in @handle.node.edges()
+        for edge2 in @endNode.edges()
+          if edge1.same(edge2)
+            @curve = null
+            @endNode = null
+            break
+        break unless @curve?
+
+    unless @curve?
+      @curve = curveBefore
+      @endNode = endNodeBefore
 
   intersectingNode: (curve) ->
     @endNode = null
@@ -162,8 +194,8 @@ class RoadTool extends Tool
     # Find all intersections
     intersections = []
     for road in ents.roads
-      if road.curve?
-        for inter in curve.getIntersections(road.curve)
+      for inter in curve.getIntersections(road.curve)
+        unless @intersectingPrevRoad(road)
           inter.road = road
           intersections.push inter
 
@@ -185,6 +217,14 @@ class RoadTool extends Tool
       return C.fromHandle @handle, pos
     else
       return null
+
+  intersectingPrevRoad: (road) ->
+    for edge in @handle.node.edges()
+      if edge.road is road
+        return true
+    return false
+
+
 
   color: () ->
     hue = 0

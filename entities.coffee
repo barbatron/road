@@ -28,6 +28,12 @@ class Node
   out: (e) ->
     tools.current.out?(@, e)
     layers.tool.clear()
+  edges: ->
+    rtnArr = []
+    for handle in @handels
+      for edge in handle.edges
+        rtnArr.push edge
+    return rtnArr
 
 class Handle
   constructor: (@node, @pos, @inverse = null) ->
@@ -56,6 +62,13 @@ class Edge
     @from.removeEdge(@)
     @to.removeEdge(@)
     @road.destroy()
+  same: (edge) ->
+    if @to is edge.to or
+       @to is edge.from or
+       @from is edge.from
+      return true
+    else
+      return false
 
 class Road
   defaults =
