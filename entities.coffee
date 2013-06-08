@@ -90,12 +90,20 @@ class Edge extends Entity
     layers.main.drawRoad(this)
 
 class Leaf extends Entity
-  constructor: (@edge, @rect, @parameter) ->
+  constructor: (@edge, @rect, @loc) ->
     super()
     @draw()
     @pos = @rect.p0
   draw: () ->
     layers.main.drawLeaf(@rect, "#777")
+
+class Lot extends Entity
+  constructor: (@path) ->
+    super()
+    @draw()
+  draw: () ->
+    layers.main.drawLot(@path)
+
 
 
 makeRoad = (oldHandle, curve, newNode=null, continous) ->
@@ -156,6 +164,7 @@ root.ents.Node = Node
 root.ents.Handle = Handle
 root.ents.Edge = Edge
 root.ents.Leaf = Leaf
+root.ents.Lot = Lot
 root.ents.edges = []
 root.ents.nodes = []
 root.ents.handels = []

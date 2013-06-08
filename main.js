@@ -32,16 +32,16 @@
 
           return typeof (_base = tools.current).keyDown === "function" ? _base.keyDown(e) : void 0;
         });
-        node = new ents.Node(P(100, 80));
-        handle = new ents.Handle(node, P(150, 85));
+        node = new ents.Node(P(100, 100));
+        handle = new ents.Handle(node, P(150, 100));
         curve = C({
-          p0: P(100, 80),
-          p1: P(150, 85),
-          p2: P(200, 200),
-          p3: P(210, 210)
+          p0: P(100, 100),
+          p1: P(150, 100),
+          p2: P(200, 150),
+          p3: P(200, 200)
         });
         ents.makeRoad(handle, curve);
-        return new tools.CommonTool();
+        return new tools.CommonTool(true);
       });
     });
   });
@@ -60,7 +60,11 @@
   };
 
   registerHotkey(113, function() {
-    return new tools.CommonTool();
+    return new tools.CommonTool(true);
+  });
+
+  registerHotkey(101, function() {
+    return new tools.CommonTool(false);
   });
 
 }).call(this);

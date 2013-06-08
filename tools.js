@@ -34,20 +34,22 @@
   CommonTool = (function(_super) {
     __extends(CommonTool, _super);
 
-    function CommonTool() {
+    function CommonTool(edgeTool) {
+      this.edgeTool = edgeTool != null ? edgeTool : true;
       CommonTool.__super__.constructor.call(this);
       layers.tool.clear();
     }
 
     CommonTool.prototype.click = function() {
-      if (this.closestEdge != null) {
-        return new LeafTool(this.closestEdge);
+      if (this.edgeTool) {
+        if (this.closestHandle != null) {
+          return new EdgeTool(this.closestHandle);
+        }
+      } else {
+        if (this.closestEdge != null) {
+          return new LeafTool(this.closestEdge);
+        }
       }
-      /*
-      if @closestHandle?
-        new EdgeTool @closestHandle
-      */
-
     };
 
     CommonTool.prototype.over = function(ent, e) {
@@ -115,51 +117,142 @@
     }
 
     LeafTool.prototype.click = function(e) {
-      var leaf;
+      var leaf, lot, rect, _i, _j, _len, _len1, _ref, _ref1;
 
-      if (this.rect != null) {
-        leaf = new ents.Leaf(this.edge, this.rect, this.parameter);
-        return new LeafTool(this.edge, leaf, this.modifier);
+      if (this.rects.length > 0) {
+        _ref = this.rects;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          rect = _ref[_i];
+          leaf = new ents.Leaf(this.edge, rect, this.loc);
+        }
+        _ref1 = this.lots;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          lot = _ref1[_j];
+          new ents.Lot(lot);
+        }
+        return new CommonTool();
       }
     };
 
     LeafTool.prototype.move = function(e) {
-      var diff, nearestLoc, normal, point, rect, tangent;
+      var curve, curveLength, driveWay, i, loc, lotWidth, n, nearestLoc, normal, normal2, point, point2, rect, s, tangent, tangent2, _i, _j, _len, _ref, _results;
 
       layers.tool.clear();
-      nearestLoc = this.edge.curve.getNearestLocation(P(e));
+      nearestLoc = this.edge.curve.getNearestLocation(P(e).pa());
       if (nearestLoc == null) {
         return;
       }
-      nearestLoc.parameter = this.edge.curve.getParameterAt(nearestLoc._distance);
-      point = this.edge.curve.getPointAt(nearestLoc.parameter, true);
-      normal = this.edge.curve.getNormalAt(nearestLoc.parameter, true);
-      tangent = this.edge.curve.getTangentAt(nearestLoc.parameter, true);
-      this.parameter = nearestLoc.parameter;
-      if (this.leaf1 != null) {
-        this.checkSide(P(e), P(point), normal);
-        this.rect = this.makeRect(point, normal, tangent);
-        diff = this.leaf1.parameter - this.parameter;
-        nearestLoc.parameter += diff;
-        point = this.edge.curve.getPointAt(nearestLoc.parameter, true);
-        normal = this.edge.curve.getNormalAt(nearestLoc.parameter, true);
-        tangent = this.edge.curve.getTangentAt(nearestLoc.parameter, true);
-        rect = this.makeRect(point, normal, tangent);
-        layers.tool.drawLeaf(rect);
-      } else {
-        this.modifier = this.checkSide(P(e), P(point), normal);
-        this.rect = this.makeRect(point, normal, tangent);
+      point = this.edge.curve.getPointAt(nearestLoc._parameter, true);
+      normal = this.edge.curve.getNormalAt(nearestLoc._parameter, true);
+      tangent = this.edge.curve.getTangentAt(nearestLoc._parameter, true);
+      this.loc = nearestLoc;
+      this.modifier = this.checkSide(P(e), P(point), normal);
+      this.rects = [];
+      curve = C(split(this.edge.curve, nearestLoc._parameter).left);
+      curveLength = curve.getLength();
+      n = this.edge.curve.getLength() / curveLength;
+      n = Math.min(n, this.edge.curve.getLength() / 10);
+      lotWidth = this.edge.curve.getLength() / n;
+      this.lots = [];
+      for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
+        s = split(this.edge.curve, (1 / n) * i);
+        loc = this.edge.curve.getNearestLocation(s.left.p3);
+        point2 = this.edge.curve.getPointAt(loc._parameter, true);
+        normal2 = this.edge.curve.getNormalAt(loc._parameter, true);
+        tangent2 = this.edge.curve.getTangentAt(loc._parameter, true);
+        this.modifier = this.modifier * -1;
+        driveWay = this.makeRect(point2, normal2, tangent2);
+        if (!(P(point2).distance(this.edge.curve.p0) < lotWidth / 2 || P(point2).distance(this.edge.curve.p3) < lotWidth / 2)) {
+          this.rects.push(driveWay);
+          this.lots.push(this.makeLot(driveWay, lotWidth));
+        }
       }
-      return layers.tool.drawLeaf(this.rect);
+      _ref = this.rects;
+      _results = [];
+      for (_j = 0, _len = _ref.length; _j < _len; _j++) {
+        rect = _ref[_j];
+        _results.push(layers.tool.drawLeaf(rect, "#00FF00"));
+      }
+      return _results;
+    };
+
+    LeafTool.prototype.adjustLots = function(lots) {
+      var intersection, intersections, lot, lot1, lot2, _i, _j, _len, _len1, _results;
+
+      for (_i = 0, _len = lots.length; _i < _len; _i++) {
+        lot = lots[_i];
+        lot.path = new paper.Path();
+        path.moveTo(lot.p0);
+        path.lineTo(lot.p1);
+        path.lineTo(lot.p2);
+        path.lineTo(lot.p3);
+        path.closePath();
+      }
+      _results = [];
+      for (_j = 0, _len1 = lots.length; _j < _len1; _j++) {
+        lot1 = lots[_j];
+        _results.push((function() {
+          var _k, _len2, _results1;
+
+          _results1 = [];
+          for (_k = 0, _len2 = lots.length; _k < _len2; _k++) {
+            lot2 = lots[_k];
+            if (lot1 !== lot2) {
+              intersections = lot1.path.getIntersections(lot2);
+              _results1.push((function() {
+                var _l, _len3, _results2;
+
+                _results2 = [];
+                for (_l = 0, _len3 = intersections.length; _l < _len3; _l++) {
+                  intersection = intersections[_l];
+                  _results2.push(intersection.segment.point.linkTo = intersection.point);
+                }
+                return _results2;
+              })());
+            } else {
+              _results1.push(void 0);
+            }
+          }
+          return _results1;
+        })());
+      }
+      return _results;
+    };
+
+    LeafTool.prototype.makeLot = function(driveWay, width) {
+      var height, lot, p0, p1, p2, p3, pp0, pp1;
+
+      driveWay.tangent.length = width;
+      driveWay.normal.length = width * 4;
+      height = 700 / width;
+      pp0 = this.edge.curve.getNearestLocation(driveWay.p0.add(P(driveWay.tangent)));
+      pp1 = this.edge.curve.getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)));
+      p0 = P(pp0._point);
+      p1 = P(pp1._point);
+      p2 = P(pp1._point).add(P(pp1.getNormal().setLength(height * this.modifier)));
+      p3 = P(pp0._point).add(P(pp0.getNormal().setLength(height * this.modifier)));
+      lot = {
+        p0: p0,
+        p1: p1,
+        p2: p2,
+        p3: p3
+      };
+      layers.tool.drawLot(lot);
+      return lot;
     };
 
     LeafTool.prototype.makeRect = function(point, normal, tangent) {
-      var p0, p1, p2, p3;
+      var offset, p0, p1, p2, p3;
 
-      normal.length = (this.modifier * (this.edge.opt.width / 2)) - (this.modifier * 1);
+      offset = this.edge.opt.width / 2;
+      normal.length = (offset - 1) * this.modifier;
       p0 = P(point).add(P(normal));
-      normal.length = this.modifier * ((this.modifier * (this.edge.opt.width / 2)) + (this.modifier * 5));
-      p1 = p0.add(P(normal));
+      if (this.modifier > 0) {
+        normal.length = offset + (5 * this.modifier);
+      } else {
+        normal.length = offset - (5 * this.modifier);
+      }
+      p1 = P(point).add(P(normal));
       tangent.length = 5;
       p2 = p1.add(P(tangent));
       p3 = p0.add(P(tangent));
@@ -167,7 +260,9 @@
         p0: p0,
         p1: p1,
         p2: p2,
-        p3: p3
+        p3: p3,
+        tangent: tangent,
+        normal: normal
       };
     };
 
@@ -502,6 +597,8 @@
   root.tools.EdgeTool = EdgeTool;
 
   root.tools.CommonTool = CommonTool;
+
+  root.tools.LeafTool = LeafTool;
 
 }).call(this);
 

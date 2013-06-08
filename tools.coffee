@@ -20,16 +20,16 @@ class Tool
     tools.current = @
 
 class CommonTool extends Tool
-  constructor: () ->
+  constructor: (@edgeTool = true) ->
     super()
     layers.tool.clear()
   click: () ->
-    if @closestEdge?
-      new LeafTool @closestEdge
-    ###
-    if @closestHandle?
-      new EdgeTool @closestHandle
-    ###
+    if @edgeTool
+      if @closestHandle?
+        new EdgeTool @closestHandle
+    else
+      if @closestEdge?
+        new LeafTool @closestEdge
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
@@ -64,42 +64,103 @@ class LeafTool extends Tool
     super()
 
   click: (e) ->
-    if @rect?
-      leaf = new ents.Leaf(@edge, @rect, @parameter)
-      new LeafTool(@edge, leaf, @modifier)
+    if @rects.length > 0
+      for rect in @rects
+        leaf = new ents.Leaf(@edge, rect, @loc)
+      for lot in @lots
+        new ents.Lot(lot)
+      new CommonTool()
 
   move: (e) ->
     layers.tool.clear()
-    nearestLoc = @edge.curve.getNearestLocation(P(e))
+    nearestLoc = @edge.curve.getNearestLocation(P(e).pa())
     return unless nearestLoc?
-    nearestLoc.parameter = @edge.curve.getParameterAt(nearestLoc._distance)
-    point = @edge.curve.getPointAt(nearestLoc.parameter, true)
-    normal = @edge.curve.getNormalAt(nearestLoc.parameter, true)
-    tangent = @edge.curve.getTangentAt(nearestLoc.parameter, true)
-    @parameter = nearestLoc.parameter
-    if @leaf1?
-      @checkSide(P(e), P(point), normal)
-      @rect = @makeRect(point, normal, tangent)
-      diff = @leaf1.parameter - @parameter
-      nearestLoc.parameter += diff
-      point = @edge.curve.getPointAt(nearestLoc.parameter, true)
-      normal = @edge.curve.getNormalAt(nearestLoc.parameter, true)
-      tangent = @edge.curve.getTangentAt(nearestLoc.parameter, true)
-      rect = @makeRect(point, normal, tangent)
-      layers.tool.drawLeaf(rect)
-      #dist = @leaf1.pos.distance(@rect.p0)
-      #@rect = @makeRect(point, normal, tangent)
-    else
-      @modifier = @checkSide(P(e), P(point), normal)
-      @rect = @makeRect(point, normal, tangent)
-    layers.tool.drawLeaf(@rect)
+    point = @edge.curve.getPointAt(nearestLoc._parameter, true)
+    normal = @edge.curve.getNormalAt(nearestLoc._parameter, true)
+    tangent = @edge.curve.getTangentAt(nearestLoc._parameter, true)
+    @loc = nearestLoc
+    @modifier = @checkSide(P(e), P(point), normal)
+    @rects = []
+    curve = C(split(@edge.curve, nearestLoc._parameter).left)
+    curveLength = curve.getLength()
+    n = @edge.curve.getLength()/curveLength
+    n = Math.min(n,@edge.curve.getLength()/10)
+    lotWidth = @edge.curve.getLength()/n
+    @lots = []
+    for i in [0..n]
+      s = split @edge.curve, ((1/n)*i)
+      loc = @edge.curve.getNearestLocation(s.left.p3)
+      point2 = @edge.curve.getPointAt(loc._parameter, true)
+      normal2 = @edge.curve.getNormalAt(loc._parameter, true)
+      tangent2 = @edge.curve.getTangentAt(loc._parameter, true)
+      @modifier = @modifier * -1
+      driveWay = @makeRect(point2, normal2, tangent2)
+      unless P(point2).distance(@edge.curve.p0) < lotWidth/2 or P(point2).distance(@edge.curve.p3) < lotWidth/2
+        @rects.push driveWay
+        @lots.push @makeLot driveWay, lotWidth
+
+
+    #@adjustLots(lots)
+
+    for rect in @rects
+      layers.tool.drawLeaf(rect, "#00FF00")
+    #dist = @leaf1.pos.distance(@rect.p0)
+    #@rect = @makeRect(point, normal, tangent)
+
+  adjustLots: (lots) ->
+    for lot in lots
+      lot.path = new paper.Path()
+      path.moveTo(lot.p0)
+      path.lineTo(lot.p1)
+      path.lineTo(lot.p2)
+      path.lineTo(lot.p3)
+      path.closePath()
+
+    for lot1 in lots
+      for lot2 in lots
+        unless lot1 is lot2
+
+          intersections = lot1.path.getIntersections(lot2)
+          for intersection in intersections
+            intersection.segment.point.linkTo = intersection.point
+
+
+  makeLot: (driveWay, width) ->
+    driveWay.tangent.length = width
+    driveWay.normal.length = width*4
+
+    height = 700/width
+
+    pp0 = @edge.curve.getNearestLocation(driveWay.p0.add(P(driveWay.tangent)))
+    pp1 = @edge.curve.getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)))
+
+    p0 = P(pp0._point)
+    p1 = P(pp1._point)
+    p2 = P(pp1._point).add(P(pp1.getNormal().setLength(height*@modifier)))
+    p3 = P(pp0._point).add(P(pp0.getNormal().setLength(height*@modifier)))
+
+    lot =
+      p0: p0
+      p1: p1
+      p2: p2
+      p3: p3
+    layers.tool.drawLot(lot)
+
+    return lot
+
+
 
   makeRect: (point, normal, tangent) ->
-    normal.length = ((@modifier*(@edge.opt.width/2))-(@modifier*1))
+    offset = @edge.opt.width/2
+
+    normal.length = (offset-1)*@modifier
     p0 = P(point).add(P(normal))
 
-    normal.length = @modifier*((@modifier*(@edge.opt.width/2))+(@modifier*5))
-    p1 = p0.add(P(normal))
+    if @modifier > 0
+      normal.length = (offset+(5*@modifier))
+    else
+      normal.length = (offset-(5*@modifier))
+    p1 = P(point).add(P(normal))
 
     tangent.length = 5
     p2 = p1.add(P(tangent))
@@ -110,6 +171,8 @@ class LeafTool extends Tool
       p1: p1
       p2: p2
       p3: p3
+      tangent: tangent
+      normal: normal
     }
 
 
@@ -349,4 +412,5 @@ class EdgeTool extends Tool
 root.tools = {}
 root.tools.EdgeTool = EdgeTool
 root.tools.CommonTool = CommonTool
+root.tools.LeafTool = LeafTool
 

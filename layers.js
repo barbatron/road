@@ -93,6 +93,17 @@
       return c.attr("fill", color);
     };
 
+    Layer.prototype.drawLot = function(rectangle, color) {
+      var c;
+
+      if (color == null) {
+        color = "rgba(180,210,180,0.3)";
+      }
+      c = this.ctx.path("M " + rectangle.p0.x + " " + rectangle.p0.y + "\nL " + rectangle.p1.x + " " + rectangle.p1.y + "\n  " + rectangle.p2.x + " " + rectangle.p2.y + "\n  " + rectangle.p3.x + " " + rectangle.p3.y);
+      c.attr("stroke", color);
+      return c.attr("fill", color);
+    };
+
     Layer.prototype.remove = function(id) {
       return this.ctx.getById(id).remove();
     };

@@ -54,16 +54,16 @@ r req[0], ->
     $(window).keypress (e) -> tools.current.keyDown?(e)
 
     # Debug stuff goes here
-    node = new ents.Node(P(100,80))
-    handle = new ents.Handle(node, P(150, 85))
+    node = new ents.Node(P(100,100))
+    handle = new ents.Handle(node, P(150, 100))
     curve = C
-      p0: P(100,80)
-      p1: P(150,85)
-      p2: P(200,200)
-      p3: P(210,210)
+      p0: P(100,100)
+      p1: P(150,100)
+      p2: P(200,150)
+      p3: P(200,200)
     ents.makeRoad(handle, curve)
 
-    new tools.CommonTool()
+    new tools.CommonTool(true)
 
 
 hotkeys = {}
@@ -73,5 +73,6 @@ $(window).keypress (e) ->
 registerHotkey = (key, func) ->
   hotkeys[key] = func
 
-registerHotkey 113, -> new tools.CommonTool() # 2
+registerHotkey 113, -> new tools.CommonTool(true) # 2
+registerHotkey 101, -> new tools.CommonTool(false) # e
 

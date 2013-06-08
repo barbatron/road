@@ -73,6 +73,16 @@ class Layer
     c.attr "stroke", color
     c.attr "fill", color
 
+  drawLot: (rectangle, color = "rgba(180,210,180,0.3)") ->
+    c = @ctx.path """
+      M #{rectangle.p0.x} #{rectangle.p0.y}
+      L #{rectangle.p1.x} #{rectangle.p1.y}
+        #{rectangle.p2.x} #{rectangle.p2.y}
+        #{rectangle.p3.x} #{rectangle.p3.y}
+      """
+    c.attr "stroke", color
+    c.attr "fill", color
+
   remove: (id) ->
     @ctx.getById(id).remove()
 
