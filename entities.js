@@ -6,19 +6,6 @@
 
   root = this;
 
-  root.validateEdgeIntegrity = function() {
-    var edge, _i, _len, _ref;
-
-    _ref = ents.edges;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      edge = _ref[_i];
-      if (edge.from.edge !== edge) {
-        console.error("problemn in edge", edge);
-      }
-    }
-    return _.delay(validateEdgeIntegrity, 1000);
-  };
-
   redrawAll = function() {
     var ent, entityType, entityTypes, _i, _len, _results;
 
@@ -320,6 +307,21 @@
   root.ents.handels = [];
 
   root.ents.all = all;
+
+  root.validateEdgeIntegrity = function() {
+    var edge, _i, _len, _ref;
+
+    _ref = ents.edges;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      edge = _ref[_i];
+      if (edge.from.edge !== edge) {
+        console.error("problem in edge", edge);
+      }
+    }
+    return _.delay(validateEdgeIntegrity, 1000);
+  };
+
+  validateEdgeIntegrity();
 
 }).call(this);
 

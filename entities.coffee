@@ -1,10 +1,5 @@
 root = this
 
-root.validateEdgeIntegrity = ->
-  for edge in ents.edges
-    unless edge.from.edge is edge
-      console.error "problemn in edge", edge
-  _.delay(validateEdgeIntegrity, 1000)
 
 redrawAll = () ->
   layers.main.clear()
@@ -185,3 +180,11 @@ root.ents.edges = []
 root.ents.nodes = []
 root.ents.handels = []
 root.ents.all = all
+
+root.validateEdgeIntegrity = ->
+  for edge in ents.edges
+    unless edge.from.edge is edge
+      console.error "problem in edge", edge
+  _.delay(validateEdgeIntegrity, 1000)
+
+validateEdgeIntegrity()

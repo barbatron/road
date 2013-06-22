@@ -51,7 +51,7 @@ r req[0], ->
 
     $("#nodeSnap").click (e) -> tools.current.click?(e)
     $("#nodeSnap").mousemove (e) -> tools.current.move?(e)
-    $(window).keypress (e) -> tools.current.keyDown?(e)
+    $(window).keypress (e) -> tools.current.keyDown?.call(tools.current, e)
 
     # Debug stuff goes here
     node = new ents.Node(P(100,100))
@@ -63,16 +63,4 @@ r req[0], ->
       p3: P(200,200)
     ents.makeRoad(handle, curve)
 
-    new tools.CommonTool(true)
-
-
-hotkeys = {}
-$(window).keypress (e) ->
-  console.log e.which
-  hotkeys[event.which]?()
-registerHotkey = (key, func) ->
-  hotkeys[key] = func
-
-registerHotkey 113, -> new tools.CommonTool(true) # 2
-registerHotkey 101, -> new tools.CommonTool(false) # e
-
+    new tools.CommonTool()

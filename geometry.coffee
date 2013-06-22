@@ -55,10 +55,12 @@ r req[0], ->
       if line.p0 is line.p1
         console.log "line", line
         console.log "papline", papLine
+
       p = papLine.getNearestPoint(@pa())
       layers.tool.clear()
       layers.tool.drawDot p, "#000"
       return P(p.x + (p.x - @x), p.y + (p.y - @y))
+   
 
     signedAngle: (p) ->
       Math.atan2 @perp().dot(p), @dot(p)
@@ -112,6 +114,8 @@ r req[0], ->
 
   class Line
     constructor: (@p0, @p1) ->
+      @p0 = P @p0
+      @p1 = P @p1
 
     slope: ->
       (@p1.y - @p0.y) / (@p1.x - @p0.x)
@@ -137,7 +141,7 @@ r req[0], ->
     angle: (other) ->
       a = @getDirection() # Vector2
       b = other.getDirection() # Vector2
-      a.angle2 b
+      a.angle b
 
     signedAngle: (other) ->
       a = @getDirection() # Vector2
@@ -239,9 +243,12 @@ r req[0], ->
 
   root.C.fromHandle = (handle, end)->
     sta = handle.node.pos
-    starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta,end).length()/3).p1
+    theHolyFactor = L(sta,end).length()/3
+    theOtherHolyThing = L(handle.inverse.pos, handle.node.pos)
+    starg = theOtherHolyThing.growAdd(theHolyFactor).p1
     mid = handle.node.pos.add(end).div(2)
     perp = L(handle.node.pos, end).perp().growAll(1000)
+    console.log starg, perp
     etarg = starg.mirror(perp)
     layers.tool.drawDot starg, "#0F0"
     layers.tool.drawDot mid, "#00F"

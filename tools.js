@@ -45,23 +45,12 @@
   CommonTool = (function(_super) {
     __extends(CommonTool, _super);
 
-    function CommonTool(edgeTool) {
-      this.edgeTool = edgeTool != null ? edgeTool : true;
+    function CommonTool() {
       CommonTool.__super__.constructor.call(this);
       layers.tool.clear();
     }
 
-    CommonTool.prototype.click = function() {
-      if (this.edgeTool) {
-        if (this.closestHandle != null) {
-          return new EdgeTool(this.closestHandle);
-        }
-      } else {
-        if (this.closestEdge != null) {
-          return new LeafTool(this.closestEdge);
-        }
-      }
-    };
+    CommonTool.prototype.click = function() {};
 
     CommonTool.prototype.over = function(ent, e) {
       if (ent instanceof ents.Node) {
@@ -107,9 +96,30 @@
     };
 
     CommonTool.prototype.keyDown = function(e) {
-      if (e.which === 119) {
-        return console.log(this.node);
-      }
+      var handler, keyBind, _ref;
+
+      console.log("asdf", e.which);
+      keyBind = {
+        108: function(e) {
+          return console.log(this.node);
+        },
+        101: function(e) {
+          if (this.closestEdge != null) {
+            return new LeafTool(this.closestEdge);
+          }
+        },
+        119: function(e) {
+          if (this.closestHandle != null) {
+            return new EdgeTool(this.closestHandle);
+          }
+        },
+        113: function(e) {
+          return new CommonTool();
+        }
+      };
+      handler = keyBind[e.which];
+      console.log("handler? ", handler);
+      return (_ref = keyBind[e.which]) != null ? _ref.call(this, e) : void 0;
     };
 
     return CommonTool;
@@ -347,7 +357,7 @@
     };
 
     EdgeTool.prototype.move = function(e) {
-      var curve, point;
+      var curve, point, snapPoint;
 
       if (this.endNode != null) {
         if (L(this.endNode.pos, P(e)).length() > 10) {
@@ -356,19 +366,31 @@
           return;
         }
       }
-      if (P(e).distance(this.handle.node.pos) <= 0) {
+      point = P(e);
+      if (this.isBackwardPoint(point)) {
         return;
       }
-      point = this.snap(P(e));
-      curve = C.fromHandle(this.handle, point);
-      this.settle(curve);
-      return this.draw();
+      snapPoint = this.snap(point);
+      if (P(snapPoint.point).distance(this.handle.node.pos) <= 10) {
+        return;
+      }
+      try {
+        curve = C.fromHandle(this.handle, snapPoint.point);
+        this.settle(curve);
+        return this.draw();
+      } catch (_error) {
+        e = _error;
+        console.warn(e);
+        return console.warn("can not make curve from", point);
+      }
     };
 
     EdgeTool.prototype.snap = function(orig) {
       var closest, dist, edge, location, nearestLocation, newPoint, _i, _len, _ref;
 
-      location = orig;
+      location = {
+        point: orig
+      };
       _ref = ents.edges;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         edge = _ref[_i];
@@ -378,6 +400,9 @@
         }
         newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true));
         dist = newPoint.distance(orig);
+        if (newPoint.distance(this.handle.node.pos) > 10) {
+          continue;
+        }
         if (dist < 10) {
           if (dist < closest || (typeof closest === "undefined" || closest === null)) {
             closest = dist;
@@ -557,13 +582,27 @@
       return "hsb(" + hue + ", 0.9, 0.5)";
     };
 
+    EdgeTool.prototype.isBackwardPoint = function(point) {
+      var angle, fwdPos, invPos, nodePos;
+
+      fwdPos = this.handle.pos;
+      invPos = this.handle.inverse.pos;
+      nodePos = this.handle.node.pos;
+      angle = this.handle.line.angle(L(nodePos, point));
+      return angle > Math.PI / 2;
+    };
+
+    EdgeTool.prototype.isBackward = function(curve) {
+      return L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length();
+    };
+
     EdgeTool.prototype.check = function(curve, skipBackward) {
       var angle, isBackward, len;
 
       if (skipBackward == null) {
         skipBackward = false;
       }
-      isBackward = L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length();
+      isBackward = this.isBackward(curve);
       angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
       if (angle > Math.PI / 2 || (skipBackward && isBackward)) {
         this.curve = L(this.handle.node.pos, curve.p3).toCurve();
@@ -588,7 +627,9 @@
         layers.tool.drawBeizer(this.curve, this.color());
         layers.tool.drawDot(this.curve.p1);
         layers.tool.drawDot(this.curve.p2);
-        return layers.tool.drawRoad(this.handle.inverse.edge, "rgba(255,30,30,0.5)");
+        if (this.handle.inverse.edge != null) {
+          return layers.tool.drawRoad(this.handle.inverse.edge, "rgba(255,30,30,0.5)");
+        }
       }
     };
 

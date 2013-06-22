@@ -24,16 +24,12 @@ class RoadTool extends Tool
 
 
 class CommonTool extends Tool
-  constructor: (@edgeTool = true) ->
+  constructor: () ->
     super()
     layers.tool.clear()
+
   click: () ->
-    if @edgeTool
-      if @closestHandle?
-        new EdgeTool @closestHandle
-    else
-      if @closestEdge?
-        new LeafTool @closestEdge
+      
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
@@ -62,7 +58,19 @@ class CommonTool extends Tool
         layers.tool.drawRoad(@closestEdge, "rgba(255,30,30,0.5)")
 
   keyDown: (e) ->
-    console.log(@node) if e.which is 119
+    console.log "asdf", e.which
+    keyBind =
+      108: (e) ->
+        console.log(@node)
+      101: (e) ->
+        new LeafTool @closestEdge if @closestEdge?
+      119: (e) ->
+        new EdgeTool @closestHandle if @closestHandle?
+      113: (e) ->
+        new CommonTool()
+    handler = keyBind[e.which]
+    console.log("handler? ", handler)
+    keyBind[e.which]?.call(this, e)
 
 class LeafTool extends Tool
   constructor: (@edge, @leaf1=null, @modifier=null) ->
@@ -248,20 +256,33 @@ class EdgeTool extends Tool
         @endNode = null
       else
         return
-    if P(e).distance(@handle.node.pos) <= 0
+
+    point = P(e)
+    if @isBackwardPoint(point)
       return
-    point = @snap P(e)
-    curve = C.fromHandle @handle, point
-    @settle(curve)
-    @draw()
+
+    snapPoint = @snap point
+    if P(snapPoint.point).distance(@handle.node.pos) <= 10
+      return
+
+
+    try
+      curve = C.fromHandle @handle, snapPoint.point
+      @settle(curve)
+      @draw()
+    catch e 
+      console.warn e
+      console.warn "can not make curve from", point
 
   snap: (orig) ->
-    location = orig
+    location = 
+      point: orig
     for edge in ents.edges
       nearestLocation = edge.curve.getNearestLocation(orig)
       continue unless nearestLocation?
       newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true))
       dist = newPoint.distance(orig)
+      continue if newPoint.distance(@handle.node.pos) > 10
       if dist < 10
         if dist < closest or not closest?
           closest = dist
@@ -390,9 +411,19 @@ class EdgeTool extends Tool
     for k,v of colorSpeed
       hue = Math.max v, hue if @rad > new Number(k)
     return "hsb(#{hue}, 0.9, 0.5)"
+  
+  isBackwardPoint: (point) ->
+    fwdPos = @handle.pos
+    invPos = @handle.inverse.pos
+    nodePos = @handle.node.pos
+    angle = @handle.line.angle(L(nodePos, point))
+    return angle > Math.PI/2
+
+  isBackward: (curve) ->
+    L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
 
   check: (curve, skipBackward = false) ->
-    isBackward = L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
+    isBackward = @isBackward(curve)
 
     # Check if angle is too steep to make a countinous curve
     angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)
@@ -420,8 +451,8 @@ class EdgeTool extends Tool
       layers.tool.drawBeizer @curve, @color()
       layers.tool.drawDot @curve.p1
       layers.tool.drawDot @curve.p2
-      #for edge in 
-      layers.tool.drawRoad(@handle.inverse.edge, "rgba(255,30,30,0.5)")
+      if @handle.inverse.edge?
+        layers.tool.drawRoad(@handle.inverse.edge, "rgba(255,30,30,0.5)")
 
 
 

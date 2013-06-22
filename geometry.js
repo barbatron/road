@@ -147,6 +147,8 @@
       function Line(p0, p1) {
         this.p0 = p0;
         this.p1 = p1;
+        this.p0 = P(this.p0);
+        this.p1 = P(this.p1);
       }
 
       Line.prototype.slope = function() {
@@ -187,7 +189,7 @@
 
         a = this.getDirection();
         b = other.getDirection();
-        return a.angle2(b);
+        return a.angle(b);
       };
 
       Line.prototype.signedAngle = function(other) {
@@ -328,12 +330,15 @@
       return curve;
     };
     root.C.fromHandle = function(handle, end) {
-      var etarg, mid, perp, sta, starg;
+      var etarg, mid, perp, sta, starg, theHolyFactor, theOtherHolyThing;
 
       sta = handle.node.pos;
-      starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta, end).length() / 3).p1;
+      theHolyFactor = L(sta, end).length() / 3;
+      theOtherHolyThing = L(handle.inverse.pos, handle.node.pos);
+      starg = theOtherHolyThing.growAdd(theHolyFactor).p1;
       mid = handle.node.pos.add(end).div(2);
       perp = L(handle.node.pos, end).perp().growAll(1000);
+      console.log(starg, perp);
       etarg = starg.mirror(perp);
       layers.tool.drawDot(starg, "#0F0");
       layers.tool.drawDot(mid, "#00F");
