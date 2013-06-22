@@ -66,8 +66,7 @@ class CommonTool extends Tool
         new LeafTool @closestEdge if @closestEdge?
       119: (e) ->
         new EdgeTool @closestHandle if @closestHandle?
-      113: (e) ->
-        new CommonTool()
+      
     handler = keyBind[e.which]
     console.log("handler? ", handler)
     keyBind[e.which]?.call(this, e)
@@ -282,7 +281,7 @@ class EdgeTool extends Tool
       continue unless nearestLocation?
       newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true))
       dist = newPoint.distance(orig)
-      continue if newPoint.distance(@handle.node.pos) > 10
+      continue if newPoint.distance(@handle.node.pos) < 10
       if dist < 10
         if dist < closest or not closest?
           closest = dist
@@ -374,7 +373,7 @@ class EdgeTool extends Tool
           intersections.push inter
 
     snapPoint = @snap curve.p3
-    unless snapPoint == curve.p3
+    unless snapPoint.point == curve.p3
       snapPoint._point = new paper.Point(snapPoint.point)
       intersections.push snapPoint
 
@@ -419,11 +418,8 @@ class EdgeTool extends Tool
     angle = @handle.line.angle(L(nodePos, point))
     return angle > Math.PI/2
 
-  isBackward: (curve) ->
-    L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length()
-
   check: (curve, skipBackward = false) ->
-    isBackward = @isBackward(curve)
+    isBackward = @isBackwardPoint(curve.p3)
 
     # Check if angle is too steep to make a countinous curve
     angle = Math.abs L(curve.p0, curve.p1).signedAngle L(curve.p2, curve.p3)

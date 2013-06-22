@@ -112,9 +112,6 @@
           if (this.closestHandle != null) {
             return new EdgeTool(this.closestHandle);
           }
-        },
-        113: function(e) {
-          return new CommonTool();
         }
       };
       handler = keyBind[e.which];
@@ -400,7 +397,7 @@
         }
         newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true));
         dist = newPoint.distance(orig);
-        if (newPoint.distance(this.handle.node.pos) > 10) {
+        if (newPoint.distance(this.handle.node.pos) < 10) {
           continue;
         }
         if (dist < 10) {
@@ -528,7 +525,7 @@
         }
       }
       snapPoint = this.snap(curve.p3);
-      if (snapPoint !== curve.p3) {
+      if (snapPoint.point !== curve.p3) {
         snapPoint._point = new paper.Point(snapPoint.point);
         intersections.push(snapPoint);
       }
@@ -592,17 +589,13 @@
       return angle > Math.PI / 2;
     };
 
-    EdgeTool.prototype.isBackward = function(curve) {
-      return L(curve.p1, curve.p2).length() > L(curve.p0, curve.p3).length();
-    };
-
     EdgeTool.prototype.check = function(curve, skipBackward) {
       var angle, isBackward, len;
 
       if (skipBackward == null) {
         skipBackward = false;
       }
-      isBackward = this.isBackward(curve);
+      isBackward = this.isBackwardPoint(curve.p3);
       angle = Math.abs(L(curve.p0, curve.p1).signedAngle(L(curve.p2, curve.p3)));
       if (angle > Math.PI / 2 || (skipBackward && isBackward)) {
         this.curve = L(this.handle.node.pos, curve.p3).toCurve();

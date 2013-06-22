@@ -30,6 +30,9 @@
         $(window).keypress(function(e) {
           var _ref;
 
+          if (e.which === 113) {
+            new tools.CommonTool();
+          }
           return (_ref = tools.current.keyDown) != null ? _ref.call(tools.current, e) : void 0;
         });
         node = new ents.Node(P(100, 100));
