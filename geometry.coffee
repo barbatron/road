@@ -97,8 +97,8 @@ r req[0], ->
   root.P =  (x, y) ->
     if y?
       p = new Point(x, y)
-    else if x instanceof paper.Point
-      p = new Point(x.x, x.y)
+    else if x.y?
+      p = new Point(x.x, x.y)    
     else
       p = new Point(x.offsetX, x.offsetY)
     return p
@@ -115,6 +115,9 @@ r req[0], ->
 
     slope: ->
       (@p1.y - @p0.y) / (@p1.x - @p0.x)
+
+    inverse: ->
+      L(@p0,@p1)
 
     toAbc: ->
       a = @p1.y - @p0.y
@@ -162,6 +165,11 @@ r req[0], ->
       p0 = @p0.sub(a)
       L p0, p1
 
+    move: (p) ->
+      p0 = @p0.add(p)
+      p1 = @p1.add(p)
+      L p0, p1
+
     getDirection: () ->
       d = @p1.sub(@p0) # Vector2
       d.normalized()
@@ -196,17 +204,27 @@ r req[0], ->
       d = p1.sub(p) # Vector2
       d.length() # number
 
+    mult: (f) ->
+      p1 = P(@p1).sub(P(@p0)).mult(f)
+      return L(@p0, p1)
+
     toCurve: () ->
+      p1 = L(@p0, @p1).grow(0.5).p1
+      p2 = L(@p1, @p0).grow(0.5).p1
       return C
         p0: @p0
-        p1: @p1
-        p2: @p0
+        p1: p1
+        p2: p2
         p3: @p1
 
   root.L = (p0, p1) ->
     new Line(p0, p1)
 
+
   root.C = (o) ->
+    if o instanceof Line
+      o = o.toCurve()
+
     start = o.p0.pa()
     handleIn = o.p1.sub(o.p0).pa()
     handleOut = o.p2.sub(o.p3).pa()

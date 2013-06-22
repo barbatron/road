@@ -37,17 +37,13 @@ class Node extends Entity
     tools.current.out?(this, e)
     layers.tool.clear()
   edges: ->
-    rtnArr = []
-    for handle in @handels
-      for edge in handle.edges
-        rtnArr.push edge
-    return rtnArr
+    return _.pluck @handles, "edge"
 
 class Handle  extends Entity
   constructor: (@node, @pos, @inverse = null) ->
     super()
     @line = L(@node.pos,@pos)
-    @edges = []
+    #@edges = []
     unless @inverse?
       #mirrTarg = @pos.mirror(@line.perp())
       @inverse = new Handle(@node, @line.grow(-1).p1, this)
@@ -65,9 +61,10 @@ class Handle  extends Entity
       console.error("wtf mate!")
       console.stack()
       throw new Error("HEY!")
-    @edges.push edge
+    @edge = edge
   removeEdge: (edge)->
-    @edges.splice(@edges.indexOf(edge), 1)
+    @edge = null
+    #@edges.splice(@edges.indexOf(edge), 1)
 
 class Edge extends Entity
   defaults =

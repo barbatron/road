@@ -40,7 +40,8 @@ class CommonTool extends Tool
       shortest = null
       layers.tool.clear()
       for handle in @node.handels
-        for edge in handle.edges
+        edge = handle.edge
+        if edge?        
           nearestPoint = edge.curve.getNearestPoint(point)
           break unless nearestPoint?
           nearestPoint = P nearestPoint
@@ -95,7 +96,9 @@ class LeafTool extends Tool
       tangent2 = @edge.curve.getTangentAt(loc._parameter, true)
       @modifier = @modifier * -1
       driveWay = @makeRect(point2, normal2, tangent2)
-      unless P(point2).distance(@edge.curve.p0) < lotWidth/2 or P(point2).distance(@edge.curve.p3) < lotWidth/2
+      distanceToStart = P(point2).distance(@edge.curve.p0)
+      distanceToEnd = P(point2).distance(@edge.curve.p3)
+      unless distanceToStart < lotWidth/2 or distanceToEnd < lotWidth/2
         @rects.push driveWay
         @lots.push @makeLot driveWay, lotWidth
 
@@ -401,8 +404,8 @@ class EdgeTool extends Tool
       layers.tool.drawBeizer @curve, @color()
       layers.tool.drawDot @curve.p1
       layers.tool.drawDot @curve.p2
-      for edge in @handle.inverse.edges
-        layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)")
+      #for edge in 
+      layers.tool.drawRoad(@handle.inverse.edge, "rgba(255,30,30,0.5)")
 
 
 
