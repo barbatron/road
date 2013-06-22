@@ -212,6 +212,7 @@ r req[0], ->
     handleOut = o.p2.sub(o.p3).pa()
     end = o.p3.pa()
     curve = new paper.Curve(start, handleIn, handleOut, end)
+    # Aliases:
     curve.p0 = o.p0
     curve.p1 = o.p1
     curve.p2 = o.p2

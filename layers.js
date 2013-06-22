@@ -51,11 +51,14 @@
     };
 
     Layer.prototype.drawHandle = function(handle) {
-      var c;
+      var c, t;
 
       c = this.ctx.circle(handle.pos.x, handle.pos.y, 4);
       c.attr("fill", "#3f3");
-      return this.drawLine(handle.line);
+      this.drawLine(handle.line);
+      c.attr("stroke", "#000");
+      t = this.ctx.text(handle.pos.x, handle.pos.y, handle.id);
+      return t.attr("font-size", "20");
     };
 
     Layer.prototype.drawDot = function(pos, color) {

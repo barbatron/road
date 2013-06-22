@@ -231,15 +231,13 @@ class EdgeTool extends Tool
         return
     if P(e).distance(@handle.node.pos) <= 0
       return
-    point = P(e)
-    snapPoint = @snap(point)
-    point = snapPoint.point if snapPoint?
+    point = @snap P(e)
     curve = C.fromHandle @handle, point
     @settle(curve)
     @draw()
 
   snap: (orig) ->
-    location = null
+    location = orig
     for edge in ents.edges
       nearestLocation = edge.curve.getNearestLocation(orig)
       continue unless nearestLocation?
@@ -252,10 +250,7 @@ class EdgeTool extends Tool
             point: newPoint
             edge: edge
             location: nearestLocation
-    if location?
-      return location
-    else
-      return null
+    return location     
 
   settle: (curve) ->
     @check(curve)
@@ -339,7 +334,7 @@ class EdgeTool extends Tool
           intersections.push inter
 
     snapPoint = @snap curve.p3
-    if snapPoint?
+    unless snapPoint == curve.p3
       snapPoint._point = new paper.Point(snapPoint.point)
       intersections.push snapPoint
 
@@ -404,6 +399,8 @@ class EdgeTool extends Tool
     if @curve?
       layers.tool.clear()
       layers.tool.drawBeizer @curve, @color()
+      layers.tool.drawDot @curve.p1
+      layers.tool.drawDot @curve.p2
       for edge in @handle.inverse.edges
         layers.tool.drawRoad(edge, "rgba(255,30,30,0.5)")
 

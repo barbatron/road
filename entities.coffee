@@ -7,9 +7,12 @@ redrawAll = () ->
     for ent in entityType
       ent.draw()
 
+all = {}
+
 class Entity
   constructor: () ->
     @id = _.uniqueId()
+    all[@id] = this
 
 class Node extends Entity
   constructor: (@pos, target=null) ->
@@ -51,8 +54,12 @@ class Handle  extends Entity
     @draw()
     @node.addHandle(this)
     ents.handels.push this
+  updatePos: (pos) ->
+    @pos = pos
+    @line = L(@node.pos,@pos)
+    @draw()
   draw: ->
-    # layers.main.drawHandle(@)
+    layers.main.drawHandle(@)
   addEdge: (edge)->
     unless edge instanceof Edge
       console.error("wtf mate!")
@@ -110,6 +117,7 @@ makeRoad = (oldHandle, curve, newNode=null, continous) ->
   newNode = new Node(curve.p3) unless newNode?
   newHandle = new Handle(newNode, curve.p2)
   if continous
+    oldHandle.updatePos curve.p1
     prevHandle = oldHandle
   else
     prevHandle = new Handle(oldHandle.node, curve.p1)
@@ -168,3 +176,4 @@ root.ents.Lot = Lot
 root.ents.edges = []
 root.ents.nodes = []
 root.ents.handels = []
+root.ents.all = all

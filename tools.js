@@ -329,7 +329,7 @@
     };
 
     EdgeTool.prototype.move = function(e) {
-      var curve, point, snapPoint;
+      var curve, point;
 
       if (this.endNode != null) {
         if (L(this.endNode.pos, P(e)).length() > 10) {
@@ -341,11 +341,7 @@
       if (P(e).distance(this.handle.node.pos) <= 0) {
         return;
       }
-      point = P(e);
-      snapPoint = this.snap(point);
-      if (snapPoint != null) {
-        point = snapPoint.point;
-      }
+      point = this.snap(P(e));
       curve = C.fromHandle(this.handle, point);
       this.settle(curve);
       return this.draw();
@@ -354,7 +350,7 @@
     EdgeTool.prototype.snap = function(orig) {
       var closest, dist, edge, location, nearestLocation, newPoint, _i, _len, _ref;
 
-      location = null;
+      location = orig;
       _ref = ents.edges;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         edge = _ref[_i];
@@ -375,11 +371,7 @@
           }
         }
       }
-      if (location != null) {
-        return location;
-      } else {
-        return null;
-      }
+      return location;
     };
 
     EdgeTool.prototype.settle = function(curve) {
@@ -493,7 +485,7 @@
         }
       }
       snapPoint = this.snap(curve.p3);
-      if (snapPoint != null) {
+      if (snapPoint !== curve.p3) {
         snapPoint._point = new paper.Point(snapPoint.point);
         intersections.push(snapPoint);
       }
@@ -578,6 +570,8 @@
       if (this.curve != null) {
         layers.tool.clear();
         layers.tool.drawBeizer(this.curve, this.color());
+        layers.tool.drawDot(this.curve.p1);
+        layers.tool.drawDot(this.curve.p2);
         _ref = this.handle.inverse.edges;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {

@@ -41,8 +41,11 @@ class Layer
 
   drawHandle: (handle) ->
     c = @ctx.circle(handle.pos.x, handle.pos.y, 4)
-    c.attr("fill", "#3f3");
+    c.attr "fill", "#3f3"
     @drawLine(handle.line)
+    c.attr "stroke", "#000"
+    t = @ctx.text(handle.pos.x, handle.pos.y, handle.id);    
+    t.attr "font-size", "20"
 
   drawDot: (pos, color="#505") ->
     c = @ctx.circle(pos.x, pos.y, 4)
