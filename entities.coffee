@@ -1,11 +1,19 @@
 root = this
 
+root.validateEdgeIntegrity = ->
+  for edge in ents.edges
+    unless edge.from.edge is edge
+      console.error "problemn in edge", edge
+  _.delay(validateEdgeIntegrity, 1000)
+
 redrawAll = () ->
   layers.main.clear()
   entityTypes = [ents.edges, ents.nodes, ents.handels]
   for entityType in entityTypes
     for ent in entityType
       ent.draw()
+
+
 
 all = {}
 
@@ -63,7 +71,7 @@ class Handle  extends Entity
       throw new Error("HEY!")
     @edge = edge
   removeEdge: (edge)->
-    @edge = null
+    @edge = null if @edge is edge
     #@edges.splice(@edges.indexOf(edge), 1)
 
 class Edge extends Entity
@@ -132,6 +140,9 @@ splitRoad = (intersection) ->
   handleOut = new Handle newNode, curves.right.p2, "later"
   handleIn.inverse = handleOut
   handleOut.inverse = handleIn
+
+  edgeToSplit.from.updatePos curves.left.p2
+  edgeToSplit.to.updatePos curves.right.p1
 
   curve = C
     p0: edgeToSplit.from.node.pos

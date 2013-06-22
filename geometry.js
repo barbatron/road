@@ -127,7 +127,7 @@
 
       if (y != null) {
         p = new Point(x, y);
-      } else if (x instanceof paper.Point) {
+      } else if (x.y != null) {
         p = new Point(x.x, x.y);
       } else {
         p = new Point(x.offsetX, x.offsetY);
@@ -151,6 +151,10 @@
 
       Line.prototype.slope = function() {
         return (this.p1.y - this.p0.y) / (this.p1.x - this.p0.x);
+      };
+
+      Line.prototype.inverse = function() {
+        return L(this.p0, this.p1);
       };
 
       Line.prototype.toAbc = function() {
@@ -227,6 +231,14 @@
         return L(p0, p1);
       };
 
+      Line.prototype.move = function(p) {
+        var p0, p1;
+
+        p0 = this.p0.add(p);
+        p1 = this.p1.add(p);
+        return L(p0, p1);
+      };
+
       Line.prototype.getDirection = function() {
         var d;
 
@@ -269,11 +281,25 @@
         return d.length();
       };
 
-      Line.prototype.toCurve = function() {
+      Line.prototype.mult = function(f) {
+        var p1;
+
+        p1 = P(this.p1).sub(P(this.p0)).mult(f);
+        return L(this.p0, p1);
+      };
+
+      Line.prototype.toCurve = function(factor) {
+        var p1, p2;
+
+        if (factor == null) {
+          factor = 0.33333333;
+        }
+        p1 = L(this.p0, this.p1).grow(factor).p1;
+        p2 = L(this.p1, this.p0).grow(factor).p1;
         return C({
           p0: this.p0,
-          p1: this.p1,
-          p2: this.p0,
+          p1: p1,
+          p2: p2,
           p3: this.p1
         });
       };
@@ -287,6 +313,9 @@
     root.C = function(o) {
       var curve, end, handleIn, handleOut, start;
 
+      if (o instanceof Line) {
+        o = o.toCurve();
+      }
       start = o.p0.pa();
       handleIn = o.p1.sub(o.p0).pa();
       handleOut = o.p2.sub(o.p3).pa();
@@ -302,7 +331,7 @@
       var etarg, mid, perp, sta, starg;
 
       sta = handle.node.pos;
-      starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta, end).length() / 2.5).p1;
+      starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta, end).length() / 3).p1;
       mid = handle.node.pos.add(end).div(2);
       perp = L(handle.node.pos, end).perp().growAll(1000);
       etarg = starg.mirror(perp);

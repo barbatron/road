@@ -19,6 +19,10 @@ class Tool
     console.log "setting tool", @
     tools.current = @
 
+class RoadTool extends Tool
+  constructor: (@edge) ->
+
+
 class CommonTool extends Tool
   constructor: (@edgeTool = true) ->
     super()
@@ -74,28 +78,37 @@ class LeafTool extends Tool
 
   move: (e) ->
     layers.tool.clear()
+
     nearestLoc = @edge.curve.getNearestLocation(P(e).pa())
     return unless nearestLoc?
+
     point = @edge.curve.getPointAt(nearestLoc._parameter, true)
     normal = @edge.curve.getNormalAt(nearestLoc._parameter, true)
     tangent = @edge.curve.getTangentAt(nearestLoc._parameter, true)
+
     @loc = nearestLoc
     @modifier = @checkSide(P(e), P(point), normal)
     @rects = []
+
     curve = C(split(@edge.curve, nearestLoc._parameter).left)
     curveLength = curve.getLength()
+
     n = @edge.curve.getLength()/curveLength
     n = Math.min(n,@edge.curve.getLength()/10)
     lotWidth = @edge.curve.getLength()/n
     @lots = []
+
     for i in [0..n]
       s = split @edge.curve, ((1/n)*i)
       loc = @edge.curve.getNearestLocation(s.left.p3)
+
       point2 = @edge.curve.getPointAt(loc._parameter, true)
       normal2 = @edge.curve.getNormalAt(loc._parameter, true)
       tangent2 = @edge.curve.getTangentAt(loc._parameter, true)
+
       @modifier = @modifier * -1
       driveWay = @makeRect(point2, normal2, tangent2)
+
       distanceToStart = P(point2).distance(@edge.curve.p0)
       distanceToEnd = P(point2).distance(@edge.curve.p3)
       unless distanceToStart < lotWidth/2 or distanceToEnd < lotWidth/2
@@ -198,6 +211,9 @@ class LeafTool extends Tool
 class EdgeTool extends Tool
   constructor: (@handle = null) ->
     super()
+    if @handle?.edge?
+      @continous = false
+      @handle = new ents.Handle(@handle.node, @handle.node)
     @endNode = null
 
   click: (e) =>

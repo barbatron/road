@@ -208,9 +208,9 @@ r req[0], ->
       p1 = P(@p1).sub(P(@p0)).mult(f)
       return L(@p0, p1)
 
-    toCurve: () ->
-      p1 = L(@p0, @p1).grow(0.5).p1
-      p2 = L(@p1, @p0).grow(0.5).p1
+    toCurve: (factor = 0.33333333) ->
+      p1 = L(@p0, @p1).grow(factor).p1
+      p2 = L(@p1, @p0).grow(factor).p1
       return C
         p0: @p0
         p1: p1
@@ -239,7 +239,7 @@ r req[0], ->
 
   root.C.fromHandle = (handle, end)->
     sta = handle.node.pos
-    starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta,end).length()/2.5).p1
+    starg = L(handle.inverse.pos, handle.node.pos).growAdd(L(sta,end).length()/3).p1
     mid = handle.node.pos.add(end).div(2)
     perp = L(handle.node.pos, end).perp().growAll(1000)
     etarg = starg.mirror(perp)

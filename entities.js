@@ -6,6 +6,19 @@
 
   root = this;
 
+  root.validateEdgeIntegrity = function() {
+    var edge, _i, _len, _ref;
+
+    _ref = ents.edges;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      edge = _ref[_i];
+      if (edge.from.edge !== edge) {
+        console.error("problemn in edge", edge);
+      }
+    }
+    return _.delay(validateEdgeIntegrity, 1000);
+  };
+
   redrawAll = function() {
     var ent, entityType, entityTypes, _i, _len, _results;
 
@@ -85,19 +98,7 @@
     };
 
     Node.prototype.edges = function() {
-      var edge, handle, rtnArr, _i, _j, _len, _len1, _ref, _ref1;
-
-      rtnArr = [];
-      _ref = this.handels;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        handle = _ref[_i];
-        _ref1 = handle.edges;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          edge = _ref1[_j];
-          rtnArr.push(edge);
-        }
-      }
-      return rtnArr;
+      return _.pluck(this.handles, "edge");
     };
 
     return Node;
@@ -113,7 +114,6 @@
       this.inverse = inverse != null ? inverse : null;
       Handle.__super__.constructor.call(this);
       this.line = L(this.node.pos, this.pos);
-      this.edges = [];
       if (this.inverse == null) {
         this.inverse = new Handle(this.node, this.line.grow(-1).p1, this);
       }
@@ -138,11 +138,13 @@
         console.stack();
         throw new Error("HEY!");
       }
-      return this.edges.push(edge);
+      return this.edge = edge;
     };
 
     Handle.prototype.removeEdge = function(edge) {
-      return this.edges.splice(this.edges.indexOf(edge), 1);
+      if (this.edge === edge) {
+        return this.edge = null;
+      }
     };
 
     return Handle;
@@ -263,6 +265,8 @@
     handleOut = new Handle(newNode, curves.right.p2, "later");
     handleIn.inverse = handleOut;
     handleOut.inverse = handleIn;
+    edgeToSplit.from.updatePos(curves.left.p2);
+    edgeToSplit.to.updatePos(curves.right.p1);
     curve = C({
       p0: edgeToSplit.from.node.pos,
       p1: curves.left.p2,
