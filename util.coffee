@@ -5,18 +5,16 @@ class Snapper
     defs = 
       snapRange: 10
       callback: ->
+      items: null
+      comparer: (a,b) -> a < b
     @options = _.defaults(opts, defs)
 
   snap: () ->
+    #items = @options.items || @items() || []
     snapResult = @nearest @items(), (i) => @distFunc(i)
-    resultDefaults = 
-      orig: @p
-      point: @p
-      distance: null      
-      item: null
-
+    result = undefined
     if snapResult? and snapResult.distance < @options.snapRange
-      result = _.defaults(snapResult, resultDefaults)
+      result = snapResult
 
     return result
 
@@ -25,7 +23,7 @@ class Snapper
     for item in items
       itemDist = distFunc item
       @options?.callback?(itemDist)?     
-      if itemDist? and (!nearest or itemDist.distance < nearest.distance)
+      if itemDist? and (not nearest or itemDist.distance < nearest.distance)
         nearest = 
           item: item
           itemDist: itemDist
@@ -58,7 +56,23 @@ class NodeSnapper extends Snapper
       distance: node.pos.distance @p
     }
   
+class HandleSnapper extends Snapper
+  items: () ->
+    return @options.items
+
+  distFunc: (handle) ->
+    pl = L(handle.node.pos, @p)
+    res = {
+      selectedHandle: handle
+      point: handle.line.p1
+      handle: handle
+      distance: handle.line.angle(pl) * 5
+    }
+    return res
+
+
 root.util =
   Snapper: Snapper
   EdgeSnapper: EdgeSnapper
   NodeSnapper: NodeSnapper
+  HandleSnapper: HandleSnapper

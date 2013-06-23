@@ -16,7 +16,7 @@ colorSpeed =
 
 class Tool
   constructor: () ->
-    console.log "setting tool", @
+    
     tools.current = @
 
 class RoadTool extends Tool
@@ -25,50 +25,88 @@ class RoadTool extends Tool
 class NodeTool extends Tool
   constructor: (@edge, @point) ->
     super()
-    loc = @edge.curve().getLocationOf(@point)
-    console.log "loc", loc
-    node = ents.splitEdge(@edge, loc.getParameter())
+    if @edge? and @point?
+      # Immediate node placement
+      loc = @edge.curve().getLocationOf(@point)
+      
+      node = ents.splitEdge(@edge, loc.getParameter())
+      new FreeEdgeTool(node)
+      return
+
+  move: (e) ->
+    @point = P(e)    
+    layers.tool.drawDot(@point, "rgba(100,100,200,0.6)")
+  click: (e) ->
+    return unless @point?
+    node = new ents.Node(@point)
     new FreeEdgeTool(node)
 
 class CommonTool extends Tool
   constructor: () ->
     super()
     layers.tool.clear()
+    @node = null
     @selection = []
 
-  click: () ->
+  click: (e) ->
     if @edge? and _.indexOf(@selection, @edge) == -1
       @selection.push(@edge)
-      layers.selection.drawEdge @edge, "rgba(255,255,0,0.4)"
-      
+      layers.selection.drawEdge @edge, "rgba(255,255,0,0.4)"  
+    
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
+      
+    if ent instanceof ents.Handle
+      @handle = ent
+      layers.handles.clear()
+      for handle in ents.handels
+        acc = handle.id == @handle.id
+        layers.handles.drawHandle(handle, "#3b3", acc)
 
   move: (e) ->  
     @cursor = cursor = P(e)
+    @point = @cursor
     layers.tool.clear()
     
     callback = (edgeDist) -> layers.tool.drawDot(edgeDist.point, "rgba(255,30,30,0.5)")
-    snapPoint = new util.EdgeSnapper(cursor, { callback: callback }).snap()
-    #console.log snapPoint
+    snapPoint = new util.EdgeSnapper(@cursor, { callback: callback }).snap()
 
-    return unless snapPoint?
+    snapPoint2 = new util.NodeSnapper(@cursor, { callback: (ns) ->
+    #  
+    }).snap()
+
+    return unless snapPoint? or snapPoint2?
     
     point = snapPoint.point;
           
+    if snapPoint2?.point 
+      point = snapPoint2.point
+      
     @edge = snapPoint.item
     @point = snapPoint.point
     @node = @edge?.nearestNode(@point)
     
+    if @node?
+      handleResult = new util.HandleSnapper(@cursor, { items: @node.handels  }).snap()
+      if results?
+        
+        @handle = results.itemDist.selectedHandle
+        layers.handles.clear()
+        for handle in ents.handels
+          acc = handle.id == @handle.id
+          layers.handles.drawHandle(handle, "#3b3", acc)
+
+
+
     layers.tool.drawNode(@node, true) if @node?
     layers.tool.drawEdge(@edge, "rgba(255,30,30,0.5)") if @edge?
 
   keyDown: (e) ->
-    console.log "asdf", e.which
+    
     keyBind =
       115: (e) -> #s
-        console.log(@node)
+        
       101: (e) -> #e
         if @edge?
           new LeafTool @edge 
@@ -80,10 +118,10 @@ class CommonTool extends Tool
         else
           console.warn 'Unable to set edge tool - no handle'
       97: (e) -> #a
-        if @point?
+        #if @point?
           new NodeTool @edge, @point 
-        else
-          console.warn 'Unable to set node tool - no point'
+        #else
+          #console.warn 'Unable to set node tool - no point'
       
     handler = keyBind[e.which]
     keyBind[e.which]?.call(this, e)
@@ -240,7 +278,7 @@ class FreeEdgeTool extends Tool
       new EdgeTool(new ents.Handle(@node, @line.p1))
 
   move: (e) ->
-    console.log "aj"
+    
     @line = L(@node.pos, P(e))
     @valid = @node.validateHandle(@line)
     @draw()
@@ -265,7 +303,7 @@ class EdgeTool extends Tool
   click: (e) =>
     if @curve?
       if @intersection? and not @endNode?
-        console.log "splitting at", @intersection
+        
         @endNode = ents.splitRoad(@intersection)
       nextHandle = ents.makeRoad(@handle, @curve, @endNode, @continous)
       tools.current = new EdgeTool(nextHandle)

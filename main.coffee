@@ -36,15 +36,11 @@ r req[0], ->
   #  growAdd: (line, amount) ->
   #    #v = @getDirection()
   #    v = geom.getDirection(line)# line.lastSegment.point.getDirectedAngle(line.firstSegment.point)
-  #    console.log "amount", amount
-  #    console.log "v", v.angle
-  #    console.log line.lastSegment.point
-  #    root.poi = line.lastSegment.point
+  #      #      #      #    root.poi = line.lastSegment.point
   #    x = Math.sin(v.angle)*amount
   #    y = Math.cos(v.angle)*amount
   #    np1 = line.lastSegment.point.add(P(x,y))
-  #    console.log np1
-  #    L line.firstSegment.point, np1
+  #      #    L line.firstSegment.point, np1
 
   #  getAngleLine: (line) ->
   #    line.getLastSegment().point.getDirectedAngle(line.getFirstSegment().point)
@@ -57,20 +53,19 @@ r req[0], ->
     $("#nodeSnap").click (e) -> tools.current.click?(e)
     $("#nodeSnap").mousemove (e) -> tools.current.move?(e)
     $(window).keypress (e) -> 
-      console.log "e.which", e.which
       if e.which is 113 #q
         new tools.CommonTool()
       tools.current.keyDown?.call(tools.current, e)
 
     # Debug stuff goes here
-    node = new ents.Node(P(100,200))
-    handle = new ents.Handle(node, P(133, 200))
-    curve = C
-      p0: P(100,200)
-      p1: P(133,200)
-      p2: P(166,200)
-      p3: P(200,200)
-    ents.makeRoad(handle, curve)
+    
+    #handle = new ents.Handle(node, P(133, 200))
+    #curve = C
+    #  p0: P(100,200)
+    #  p1: P(133,200)
+    #  p2: P(166,200)
+    #  p3: P(200,200)
+    #ents.makeRoad(handle, curve)
     
     loadAll()
 

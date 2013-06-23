@@ -32,12 +32,17 @@ class Node extends Entity
     return _.pluck @handles, "edge"
   validateHandle: (line) ->
     for handle in @handels
-      if line.angle(handle.line) < Math.PI/4
+      if handle.line.angle(line) < Math.PI/4
         return false
     return true
-
-
-
+  getHandle: (line) ->
+    return false unless @validateHandle(line)
+    for handle in @handles
+      unless handle.edge?
+        return handle
+    if @handles < 5
+      return @makeHandle()
+    
 
 class Handle extends Entity
   constructor: (@node, @pos, @inverse = null) ->
@@ -65,6 +70,11 @@ class Handle extends Entity
   removeEdge: (edge)->
     @edge = null if @edge is edge
     #@edges.splice(@edges.indexOf(edge), 1)
+  over: (e) ->
+    tools.current.over?(this, e)
+    #layers.tool.drawNode(@, true)
+  out: (e) ->
+    tools.current.out?(this, e)
 
 class Edge extends Entity
   defaults =
@@ -170,8 +180,7 @@ root.test = () ->
     p2: P(100,50)
     p3: P(100,100)
 
-  console.log split(c,0.5)
-
+  
 
 root.entTypes = 
   "Edge": "edges"
@@ -187,19 +196,18 @@ root.redrawAll = () ->
   entityTypes = [ents.edges, ents.nodes, ents.handels]
   for entityType in entityTypes
     for ent in entityType
-      console.log ent
-      ent.draw()
+            ent.draw()
 
 root.loadAll = () ->
   return unless localStorage.all?
   stored = JSON.retrocycle((JSON.parse localStorage.all), root.classes)
   
+  redrawAll()
   for type,arr of stored
     ents[entTypes[type]] = arr
     for ent in arr
       if (ent.id > idCounter) 
         idCounter = ent.id
-  redrawAll()
 
 root.ents = {}
 root.ents.makeRoad = makeRoad

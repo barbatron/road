@@ -71,11 +71,29 @@
       _ref = this.handels;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         handle = _ref[_i];
-        if (line.angle(handle.line) < Math.PI / 4) {
+        if (handle.line.angle(line) < Math.PI / 4) {
           return false;
         }
       }
       return true;
+    };
+
+    Node.prototype.getHandle = function(line) {
+      var handle, _i, _len, _ref;
+
+      if (!this.validateHandle(line)) {
+        return false;
+      }
+      _ref = this.handles;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        handle = _ref[_i];
+        if (handle.edge == null) {
+          return handle;
+        }
+      }
+      if (this.handles < 5) {
+        return this.makeHandle();
+      }
     };
 
     return Node;
@@ -122,6 +140,18 @@
       if (this.edge === edge) {
         return this.edge = null;
       }
+    };
+
+    Handle.prototype.over = function(e) {
+      var _base;
+
+      return typeof (_base = tools.current).over === "function" ? _base.over(this, e) : void 0;
+    };
+
+    Handle.prototype.out = function(e) {
+      var _base;
+
+      return typeof (_base = tools.current).out === "function" ? _base.out(this, e) : void 0;
     };
 
     return Handle;
@@ -292,13 +322,12 @@
   root.test = function() {
     var c;
 
-    c = C({
+    return c = C({
       p0: P(0, 0),
       p1: P(50, 0),
       p2: P(100, 50),
       p3: P(100, 100)
     });
-    return console.log(split(c, 0.5));
   };
 
   root.entTypes = {
@@ -325,7 +354,6 @@
         _results1 = [];
         for (_j = 0, _len1 = entityType.length; _j < _len1; _j++) {
           ent = entityType[_j];
-          console.log(ent);
           _results1.push(ent.draw());
         }
         return _results1;
@@ -335,23 +363,33 @@
   };
 
   root.loadAll = function() {
-    var arr, ent, stored, type, _i, _len;
+    var arr, ent, stored, type, _results;
 
     if (localStorage.all == null) {
       return;
     }
     stored = JSON.retrocycle(JSON.parse(localStorage.all), root.classes);
+    redrawAll();
+    _results = [];
     for (type in stored) {
       arr = stored[type];
       ents[entTypes[type]] = arr;
-      for (_i = 0, _len = arr.length; _i < _len; _i++) {
-        ent = arr[_i];
-        if (ent.id > idCounter) {
-          idCounter = ent.id;
+      _results.push((function() {
+        var _i, _len, _results1;
+
+        _results1 = [];
+        for (_i = 0, _len = arr.length; _i < _len; _i++) {
+          ent = arr[_i];
+          if (ent.id > idCounter) {
+            _results1.push(idCounter = ent.id);
+          } else {
+            _results1.push(void 0);
+          }
         }
-      }
+        return _results1;
+      })());
     }
-    return redrawAll();
+    return _results;
   };
 
   root.ents = {};

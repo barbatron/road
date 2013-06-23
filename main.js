@@ -17,8 +17,6 @@
   r(req[0], function() {
     return r(req[1], function() {
       return r(req[2], function() {
-        var curve, handle, node;
-
         $("#nodeSnap").click(function(e) {
           var _base;
 
@@ -32,21 +30,11 @@
         $(window).keypress(function(e) {
           var _ref;
 
-          console.log("e.which", e.which);
           if (e.which === 113) {
             new tools.CommonTool();
           }
           return (_ref = tools.current.keyDown) != null ? _ref.call(tools.current, e) : void 0;
         });
-        node = new ents.Node(P(100, 200));
-        handle = new ents.Handle(node, P(133, 200));
-        curve = C({
-          p0: P(100, 200),
-          p1: P(133, 200),
-          p2: P(166, 200),
-          p3: P(200, 200)
-        });
-        ents.makeRoad(handle, curve);
         loadAll();
         return new tools.CommonTool();
       });

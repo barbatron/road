@@ -23,7 +23,6 @@
 
   Tool = (function() {
     function Tool() {
-      console.log("setting tool", this);
       tools.current = this;
     }
 
@@ -51,11 +50,28 @@
       this.edge = edge;
       this.point = point;
       NodeTool.__super__.constructor.call(this);
-      loc = this.edge.curve().getLocationOf(this.point);
-      console.log("loc", loc);
-      node = ents.splitEdge(this.edge, loc.getParameter());
-      new FreeEdgeTool(node);
+      if ((this.edge != null) && (this.point != null)) {
+        loc = this.edge.curve().getLocationOf(this.point);
+        node = ents.splitEdge(this.edge, loc.getParameter());
+        new FreeEdgeTool(node);
+        return;
+      }
     }
+
+    NodeTool.prototype.move = function(e) {
+      this.point = P(e);
+      return layers.tool.drawDot(this.point, "rgba(100,100,200,0.6)");
+    };
+
+    NodeTool.prototype.click = function(e) {
+      var node;
+
+      if (this.point == null) {
+        return;
+      }
+      node = new ents.Node(this.point);
+      return new FreeEdgeTool(node);
+    };
 
     return NodeTool;
 
@@ -67,10 +83,11 @@
     function CommonTool() {
       CommonTool.__super__.constructor.call(this);
       layers.tool.clear();
+      this.node = null;
       this.selection = [];
     }
 
-    CommonTool.prototype.click = function() {
+    CommonTool.prototype.click = function(e) {
       if ((this.edge != null) && _.indexOf(this.selection, this.edge) === -1) {
         this.selection.push(this.edge);
         return layers.selection.drawEdge(this.edge, "rgba(255,255,0,0.4)");
@@ -78,29 +95,65 @@
     };
 
     CommonTool.prototype.over = function(ent, e) {
+      var acc, handle, _i, _len, _ref, _results;
+
       if (ent instanceof ents.Node) {
-        return this.node = ent;
+        this.node = ent;
+      }
+      if (ent instanceof ents.Handle) {
+        this.handle = ent;
+        layers.handles.clear();
+        _ref = ents.handels;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          handle = _ref[_i];
+          acc = handle.id === this.handle.id;
+          _results.push(layers.handles.drawHandle(handle, "#3b3", acc));
+        }
+        return _results;
       }
     };
 
     CommonTool.prototype.move = function(e) {
-      var callback, cursor, point, snapPoint, _ref;
+      var acc, callback, cursor, handle, handleResult, point, snapPoint, snapPoint2, _i, _len, _ref, _ref1;
 
       this.cursor = cursor = P(e);
+      this.point = this.cursor;
       layers.tool.clear();
       callback = function(edgeDist) {
         return layers.tool.drawDot(edgeDist.point, "rgba(255,30,30,0.5)");
       };
-      snapPoint = new util.EdgeSnapper(cursor, {
+      snapPoint = new util.EdgeSnapper(this.cursor, {
         callback: callback
       }).snap();
-      if (snapPoint == null) {
+      snapPoint2 = new util.NodeSnapper(this.cursor, {
+        callback: function(ns) {}
+      }).snap();
+      if (!((snapPoint != null) || (snapPoint2 != null))) {
         return;
       }
       point = snapPoint.point;
+      if (snapPoint2 != null ? snapPoint2.point : void 0) {
+        point = snapPoint2.point;
+      }
       this.edge = snapPoint.item;
       this.point = snapPoint.point;
       this.node = (_ref = this.edge) != null ? _ref.nearestNode(this.point) : void 0;
+      if (this.node != null) {
+        handleResult = new util.HandleSnapper(this.cursor, {
+          items: this.node.handels
+        }).snap();
+        if (typeof results !== "undefined" && results !== null) {
+          this.handle = results.itemDist.selectedHandle;
+          layers.handles.clear();
+          _ref1 = ents.handels;
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            handle = _ref1[_i];
+            acc = handle.id === this.handle.id;
+            layers.handles.drawHandle(handle, "#3b3", acc);
+          }
+        }
+      }
       if (this.node != null) {
         layers.tool.drawNode(this.node, true);
       }
@@ -112,11 +165,8 @@
     CommonTool.prototype.keyDown = function(e) {
       var handler, keyBind, _ref;
 
-      console.log("asdf", e.which);
       keyBind = {
-        115: function(e) {
-          return console.log(this.node);
-        },
+        115: function(e) {},
         101: function(e) {
           if (this.edge != null) {
             return new LeafTool(this.edge);
@@ -132,11 +182,7 @@
           }
         },
         97: function(e) {
-          if (this.point != null) {
-            return new NodeTool(this.edge, this.point);
-          } else {
-            return console.warn('Unable to set node tool - no point');
-          }
+          return new NodeTool(this.edge, this.point);
         }
       };
       handler = keyBind[e.which];
@@ -345,7 +391,6 @@
     };
 
     FreeEdgeTool.prototype.move = function(e) {
-      console.log("aj");
       this.line = L(this.node.pos, P(e));
       this.valid = this.node.validateHandle(this.line);
       return this.draw();
@@ -383,7 +428,6 @@
 
       if (this.curve != null) {
         if ((this.intersection != null) && (this.endNode == null)) {
-          console.log("splitting at", this.intersection);
           this.endNode = ents.splitRoad(this.intersection);
         }
         nextHandle = ents.makeRoad(this.handle, this.curve, this.endNode, this.continous);

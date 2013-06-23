@@ -42,9 +42,23 @@ class Layer
     c.attr "stroke-width", "7"
     c.attr("stroke", color)
 
-  drawHandle: (handle) ->
-    c = @ctx.circle(handle.pos.x, handle.pos.y, 4)
-    c.attr "fill", "#3b3"
+  drawHandle: (handle, color="#3b3", accentuate) ->
+    ###
+    pos =
+      nx: handle.node.pos.x,
+      ny: handle.node.pos.y,
+      rx: handle.pos.x - handle.node.pos.x, 
+      ry: handle.pos.y - handle.node.pos.y    
+   
+    newPos = 
+      x: pos.nx + pos.rx * scaling
+      y: pos.ny + pos.ry * scaling
+###
+    rad = 4
+    if accentuate  then rad = 10 
+    c = @ctx.circle(handle.pos.x, handle.pos.y, rad)
+    c.attr "stroke", "#000"
+    c.attr "fill", color
     @drawLine(handle.line)
     c.attr "stroke", "#000"
     t = @ctx.text(handle.pos.x, handle.pos.y, handle.id);    
@@ -129,7 +143,7 @@ class Layer
 
 
 root.layers = {}
-for layer in ['main','node','tool','selection','nodeSnap' ]
+for layer in ['main','tool','selection','handles','nodeSnap' ]
   root.layers[layer] = new Layer(layer)
 
 class PaperLayer

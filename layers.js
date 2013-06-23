@@ -53,11 +53,31 @@
       return c.attr("stroke", color);
     };
 
-    Layer.prototype.drawHandle = function(handle) {
-      var c, t;
+    Layer.prototype.drawHandle = function(handle, color, accentuate) {
+      var c, rad, t;
 
-      c = this.ctx.circle(handle.pos.x, handle.pos.y, 4);
-      c.attr("fill", "#3b3");
+      if (color == null) {
+        color = "#3b3";
+      }
+      /*
+      pos =
+        nx: handle.node.pos.x,
+        ny: handle.node.pos.y,
+        rx: handle.pos.x - handle.node.pos.x, 
+        ry: handle.pos.y - handle.node.pos.y    
+         
+      newPos = 
+        x: pos.nx + pos.rx * scaling
+        y: pos.ny + pos.ry * scaling
+      */
+
+      rad = 4;
+      if (accentuate) {
+        rad = 10;
+      }
+      c = this.ctx.circle(handle.pos.x, handle.pos.y, rad);
+      c.attr("stroke", "#000");
+      c.attr("fill", color);
       this.drawLine(handle.line);
       c.attr("stroke", "#000");
       t = this.ctx.text(handle.pos.x, handle.pos.y, handle.id);
@@ -176,7 +196,7 @@
 
   root.layers = {};
 
-  _ref = ['main', 'node', 'tool', 'selection', 'nodeSnap'];
+  _ref = ['main', 'tool', 'selection', 'handles', 'nodeSnap'];
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     layer = _ref[_i];
     root.layers[layer] = new Layer(layer);
