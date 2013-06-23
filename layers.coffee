@@ -24,9 +24,12 @@ class Layer
   clear: ->
     @ctx.clear()
     
-  drawLine: (line) ->
-    c = @ctx.path("M #{line.p0.x} #{line.p0.y} L #{line.p1.x} #{line.p1.y}")
-    c.attr("stroke", "#eee")
+  drawLine: (line, color="#eee") ->
+    c = @ctx.path """
+      M #{line.p0.x} #{line.p0.y} 
+      L #{line.p1.x} #{line.p1.y}
+      """
+    c.attr "stroke", color
     c.attr "stroke-width", "2"
     
   drawBeizer: (beizer, color="#777") ->
@@ -41,11 +44,11 @@ class Layer
 
   drawHandle: (handle) ->
     c = @ctx.circle(handle.pos.x, handle.pos.y, 4)
-    c.attr "fill", "#3f3"
+    c.attr "fill", "#3b3"
     @drawLine(handle.line)
     c.attr "stroke", "#000"
     t = @ctx.text(handle.pos.x, handle.pos.y, handle.id);    
-    t.attr "font-size", "20"
+    t.attr "font-size", "5"
 
   drawDot: (pos, color="#505") ->
     c = @ctx.circle(pos.x, pos.y, 4)

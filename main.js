@@ -9,7 +9,7 @@
   req = {
     0: ['geometry', 'paper', 'tools', 'cycle', 'entities'],
     1: ['raphael'],
-    2: ['layers']
+    2: ['layers', 'util']
   };
 
   r = requirejs;
@@ -32,20 +32,22 @@
         $(window).keypress(function(e) {
           var _ref;
 
+          console.log("e.which", e.which);
           if (e.which === 113) {
             new tools.CommonTool();
           }
           return (_ref = tools.current.keyDown) != null ? _ref.call(tools.current, e) : void 0;
         });
-        node = new ents.Node(P(100, 100));
-        handle = new ents.Handle(node, P(150, 100));
+        node = new ents.Node(P(100, 200));
+        handle = new ents.Handle(node, P(133, 200));
         curve = C({
-          p0: P(100, 100),
-          p1: P(150, 100),
-          p2: P(200, 150),
+          p0: P(100, 200),
+          p1: P(133, 200),
+          p2: P(166, 200),
           p3: P(200, 200)
         });
         ents.makeRoad(handle, curve);
+        loadAll();
         return new tools.CommonTool();
       });
     });

@@ -31,11 +31,14 @@
       return this.ctx.clear();
     };
 
-    Layer.prototype.drawLine = function(line) {
+    Layer.prototype.drawLine = function(line, color) {
       var c;
 
-      c = this.ctx.path("M " + line.p0.x + " " + line.p0.y + " L " + line.p1.x + " " + line.p1.y);
-      c.attr("stroke", "#eee");
+      if (color == null) {
+        color = "#eee";
+      }
+      c = this.ctx.path("M " + line.p0.x + " " + line.p0.y + " \nL " + line.p1.x + " " + line.p1.y);
+      c.attr("stroke", color);
       return c.attr("stroke-width", "2");
     };
 
@@ -54,11 +57,11 @@
       var c, t;
 
       c = this.ctx.circle(handle.pos.x, handle.pos.y, 4);
-      c.attr("fill", "#3f3");
+      c.attr("fill", "#3b3");
       this.drawLine(handle.line);
       c.attr("stroke", "#000");
       t = this.ctx.text(handle.pos.x, handle.pos.y, handle.id);
-      return t.attr("font-size", "20");
+      return t.attr("font-size", "5");
     };
 
     Layer.prototype.drawDot = function(pos, color) {

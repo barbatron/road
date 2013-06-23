@@ -1,8 +1,10 @@
 root = this
 
+idCounter = 0
+
 class Entity
   constructor: () ->
-    @id = _.uniqueId()
+    @id = ++idCounter 
 
 class Node extends Entity
   constructor: (@pos, target=null) ->
@@ -28,8 +30,16 @@ class Node extends Entity
     layers.tool.clear()
   edges: ->
     return _.pluck @handles, "edge"
+  validateHandle: (line) ->
+    for handle in @handels
+      if line.angle(handle.line) < Math.PI/4
+        return false
+    return true
 
-class Handle  extends Entity
+
+
+
+class Handle extends Entity
   constructor: (@node, @pos, @inverse = null) ->
     super()
     @line = L(@node.pos,@pos)
@@ -88,6 +98,10 @@ class Edge extends Entity
       p1: @from.pos
       p2: @to.pos
       p3: @to.node.pos
+  nearestNode: (point) ->
+    toDist = @to.node.pos.distance(point)
+    fromDist = @from.node.pos.distance(point)
+    return if toDist < fromDist then @to.node else @from.node
 
 class Leaf extends Entity
   constructor: (@edge, @rect, @loc) ->
@@ -104,7 +118,8 @@ class Lot extends Entity
   draw: () ->
     layers.main.drawLot(@path)
 
-
+addHandle = (node, pos) ->
+  new Handle(node, pos)
 
 makeRoad = (oldHandle, curve, newNode=null, continous) ->
   newNode = new Node(curve.p3) unless newNode?
@@ -118,33 +133,31 @@ makeRoad = (oldHandle, curve, newNode=null, continous) ->
   return newHandle.inverse
 
 splitRoad = (intersection) ->
-  edgeToSplit = intersection.edge
-  curveToSplit = intersection.edge.curve()
-  curves = split curveToSplit, intersection.location.parameter
+  splitEdge(intersection.edge, intersection.location.parameter)
 
+splitEdge = (edgeToSplit, parameter) ->
+  curveToSplit = edgeToSplit.curve()
+  curves = split curveToSplit, parameter
 
   newNode =   new Node curves.left.p3
-  handleIn =  new Handle newNode, curves.left.p1, "later"
-  handleOut = new Handle newNode, curves.right.p2, "later"
-  handleIn.inverse = handleOut
-  handleOut.inverse = handleIn
-
+  handleLeft =  new Handle newNode, curves.left.p1
+  handleRight = handleLeft.inverse
   edgeToSplit.from.updatePos curves.left.p2
   edgeToSplit.to.updatePos curves.right.p1
 
   curve = C
     p0: edgeToSplit.from.node.pos
     p1: curves.left.p2
-    p2: handleIn.pos
+    p2: handleLeft.pos
     p3: newNode.pos
-  new Edge(edgeToSplit.from, handleIn)
+  new Edge(edgeToSplit.from, handleLeft)
 
   curve = C
     p0: newNode.pos
-    p1: handleOut.pos
+    p1: handleRight.pos
     p2: curves.right.p1
     p3: edgeToSplit.to.node.pos
-  new Edge(handleOut, edgeToSplit.to)
+  new Edge(handleRight, edgeToSplit.to)
 
   edgeToSplit.destroy()
 
@@ -178,35 +191,20 @@ root.redrawAll = () ->
       ent.draw()
 
 root.loadAll = () ->
-  #res = new Resurrect()
-  #ents = _.extend ents, res.resurrect localStorage.all
+  return unless localStorage.all?
   stored = JSON.retrocycle((JSON.parse localStorage.all), root.classes)
-  console.log stored
-  seen = []
-  find = (obj, namespace) ->
-    console.log namespace
-    for k, v of obj
-      continue unless v?
-      if seen.indexOf(v) == -1
-        seen.push v
-      else
-        continue
-      if v?.___const? and root.classes[v.___const]? and v.___const isnt "Object"
-        v.__proto__ = root.classes[v.___const].prototype
-        v.constructor = root.classes[v.___const].prototype.constructor 
-        console.log "Added prototype for  "+ v.___const
-        #delete v.___const
-      if _.isObject v
-        find(v, namespace+"."+k)
+  
   for type,arr of stored
     ents[entTypes[type]] = arr
-  #  for ent in arr
-  #    ent.__proto__ = ents[type].prototype
+    for ent in arr
+      if (ent.id > idCounter) 
+        idCounter = ent.id
   redrawAll()
 
 root.ents = {}
 root.ents.makeRoad = makeRoad
 root.ents.splitRoad = splitRoad
+root.ents.splitEdge = splitEdge
 root.ents.Node = Node
 root.ents.Handle = Handle
 root.ents.Edge = Edge
@@ -227,6 +225,15 @@ root.ents.all = () ->
   for k,v of entTypes
     obj[k] = root.ents[v]
   return obj
+
+root.e = () ->
+  o = {}
+  for k, arr of ents.all()
+    o[k] = {} unless o[k]?
+    for ent in arr
+      throw 
+      o[k][ent.id] = ent
+  return o
 
 
 root.validateEdgeIntegrity = ->

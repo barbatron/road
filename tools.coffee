@@ -22,6 +22,13 @@ class Tool
 class RoadTool extends Tool
   constructor: (@edge) ->
 
+class NodeTool extends Tool
+  constructor: (@edge, @point) ->
+    super()
+    loc = @edge.curve().getLocationOf(@point)
+    console.log "loc", loc
+    node = ents.splitEdge(@edge, loc.getParameter())
+    new FreeEdgeTool(node)
 
 class CommonTool extends Tool
   constructor: () ->
@@ -30,46 +37,53 @@ class CommonTool extends Tool
     @selection = []
 
   click: () ->
-    if @closestEdge? and _.indexOf(@selection, @closestEdge) == -1
-      @selection.push(@closestEdge)
-      layers.selection.drawEdge @closestEdge, "rgba(255,255,0,0.4)"
+    if @edge? and _.indexOf(@selection, @edge) == -1
+      @selection.push(@edge)
+      layers.selection.drawEdge @edge, "rgba(255,255,0,0.4)"
       
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
-      
+
   move: (e) ->  
-    point = P(e)
-    edges = []
-    shortest = null
+    @cursor = cursor = P(e)
     layers.tool.clear()
-    for handle in ents.handels
-      edge = handle.edge
-      if edge?        
-        nearestPoint = edge.curve().getNearestPoint(point)
-        break unless nearestPoint?
-        nearestPoint = P nearestPoint
-        dist = point.distance(nearestPoint)
-        layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
-        if dist < shortest or not shortest?
-          shortest = dist
-          @closestEdge = edge
-          if edge.from.node is @node
-            @closestHandle = edge.from.inverse
-          else
-            @closestHandle = edge.to.inverse
-    if @closestEdge?
-      layers.tool.drawEdge(@closestEdge, "rgba(255,30,30,0.5)")
+    
+    callback = (edgeDist) -> layers.tool.drawDot(edgeDist.point, "rgba(255,30,30,0.5)")
+    snapPoint = new util.EdgeSnapper(cursor, { callback: callback }).snap()
+    #console.log snapPoint
+
+    return unless snapPoint?
+    
+    point = snapPoint.point;
+          
+    @edge = snapPoint.item
+    @point = snapPoint.point
+    @node = @edge?.nearestNode(@point)
+    
+    layers.tool.drawNode(@node, true) if @node?
+    layers.tool.drawEdge(@edge, "rgba(255,30,30,0.5)") if @edge?
 
   keyDown: (e) ->
     console.log "asdf", e.which
     keyBind =
-      108: (e) ->
+      115: (e) -> #s
         console.log(@node)
-      101: (e) ->
-        new LeafTool @closestEdge if @closestEdge?
-      119: (e) ->
-        new EdgeTool @closestHandle if @closestHandle?
+      101: (e) -> #e
+        if @edge?
+          new LeafTool @edge 
+        else
+          console.warn 'Unable to set leaf tool - no edge'
+      119: (e) -> #w
+        if @handle?
+          new EdgeTool @handle 
+        else
+          console.warn 'Unable to set edge tool - no handle'
+      97: (e) -> #a
+        if @point?
+          new NodeTool @edge, @point 
+        else
+          console.warn 'Unable to set node tool - no point'
       
     handler = keyBind[e.which]
     keyBind[e.which]?.call(this, e)
@@ -216,14 +230,36 @@ class LeafTool extends Tool
 
 
 
+class FreeEdgeTool extends Tool
+  constructor: (@node) ->
+    super()
+    @valid = false
 
+  click: (e) ->
+    if @valid
+      new EdgeTool(new ents.Handle(@node, @line.p1))
+
+  move: (e) ->
+    console.log "aj"
+    @line = L(@node.pos, P(e))
+    @valid = @node.validateHandle(@line)
+    @draw()
+
+  draw: () ->
+    layers.tool.clear()
+    layers.tool.drawLine(@line, 
+      if @valid then "rgba(0,255,128,0.5)" else "rgba(255,128,128,0.5)")
 
 class EdgeTool extends Tool
-  constructor: (@handle = null) ->
+  constructor: (@handle) ->
     super()
-    if @handle?.edge?
-      @continous = false
-      @handle = new ents.Handle(@handle.node, @handle.node)
+    if @handle.edge?
+      unless @handle.inverse.edge?
+        @handle = @handle.inverse 
+      else
+        new FreeEdgeTool(@handle.node)
+        return
+
     @endNode = null
 
   click: (e) =>
@@ -253,16 +289,19 @@ class EdgeTool extends Tool
       @endNode = null
 
   move: (e) ->
+    # Check if distance to end node is too far away
     if @endNode?
       if L(@endNode.pos, P(e)).length() > 10
         @endNode = null
       else
         return
 
+    # Prevent backward curves
     point = P(e)
     if @isBackwardPoint(point)
       return
 
+    # Prevent snapping to self
     snapPoint = @snap point
     if P(snapPoint.point).distance(@handle.node.pos) <= 10
       return
@@ -419,7 +458,7 @@ class EdgeTool extends Tool
     invPos = @handle.inverse.pos
     nodePos = @handle.node.pos
     angle = @handle.line.angle(L(nodePos, point))
-    return angle > Math.PI/2
+    return angle > 2 * Math.PI / 3
 
   check: (curve, skipBackward = false) ->
     isBackward = @isBackwardPoint(curve.p3)
