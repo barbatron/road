@@ -4,8 +4,10 @@
 
   root = this;
 
+  root.classes = {};
+
   req = {
-    0: ['geometry', 'paper', 'tools', 'entities'],
+    0: ['geometry', 'paper', 'tools', 'cycle', 'entities'],
     1: ['raphael'],
     2: ['layers']
   };

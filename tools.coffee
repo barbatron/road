@@ -27,35 +27,39 @@ class CommonTool extends Tool
   constructor: () ->
     super()
     layers.tool.clear()
+    @selection = []
 
   click: () ->
+    if @closestEdge? and _.indexOf(@selection, @closestEdge) == -1
+      @selection.push(@closestEdge)
+      layers.selection.drawEdge @closestEdge, "rgba(255,255,0,0.4)"
       
   over: (ent, e) ->
     if ent instanceof ents.Node
       @node = ent
-  move: (e) ->
-    if @node?
-      point = P(e)
-      edges = []
-      shortest = null
-      layers.tool.clear()
-      for handle in @node.handels
-        edge = handle.edge
-        if edge?        
-          nearestPoint = edge.curve.getNearestPoint(point)
-          break unless nearestPoint?
-          nearestPoint = P nearestPoint
-          dist = point.distance(nearestPoint)
-          layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
-          if dist < shortest or not shortest?
-            shortest = dist
-            @closestEdge = edge
-            if edge.from.node is @node
-              @closestHandle = edge.from.inverse
-            else
-              @closestHandle = edge.to.inverse
-      if @closestEdge?
-        layers.tool.drawRoad(@closestEdge, "rgba(255,30,30,0.5)")
+      
+  move: (e) ->  
+    point = P(e)
+    edges = []
+    shortest = null
+    layers.tool.clear()
+    for handle in ents.handels
+      edge = handle.edge
+      if edge?        
+        nearestPoint = edge.curve().getNearestPoint(point)
+        break unless nearestPoint?
+        nearestPoint = P nearestPoint
+        dist = point.distance(nearestPoint)
+        layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)")
+        if dist < shortest or not shortest?
+          shortest = dist
+          @closestEdge = edge
+          if edge.from.node is @node
+            @closestHandle = edge.from.inverse
+          else
+            @closestHandle = edge.to.inverse
+    if @closestEdge?
+      layers.tool.drawEdge(@closestEdge, "rgba(255,30,30,0.5)")
 
   keyDown: (e) ->
     console.log "asdf", e.which
@@ -68,7 +72,6 @@ class CommonTool extends Tool
         new EdgeTool @closestHandle if @closestHandle?
       
     handler = keyBind[e.which]
-    console.log("handler? ", handler)
     keyBind[e.which]?.call(this, e)
 
 class LeafTool extends Tool
@@ -86,38 +89,38 @@ class LeafTool extends Tool
   move: (e) ->
     layers.tool.clear()
 
-    nearestLoc = @edge.curve.getNearestLocation(P(e).pa())
+    nearestLoc = @edge.curve().getNearestLocation(P(e).pa())
     return unless nearestLoc?
 
-    point = @edge.curve.getPointAt(nearestLoc._parameter, true)
-    normal = @edge.curve.getNormalAt(nearestLoc._parameter, true)
-    tangent = @edge.curve.getTangentAt(nearestLoc._parameter, true)
+    point = @edge.curve().getPointAt(nearestLoc._parameter, true)
+    normal = @edge.curve().getNormalAt(nearestLoc._parameter, true)
+    tangent = @edge.curve().getTangentAt(nearestLoc._parameter, true)
 
     @loc = nearestLoc
     @modifier = @checkSide(P(e), P(point), normal)
     @rects = []
 
-    curve = C(split(@edge.curve, nearestLoc._parameter).left)
+    curve = C(split(@edge.curve(), nearestLoc._parameter).left)
     curveLength = curve.getLength()
 
-    n = @edge.curve.getLength()/curveLength
-    n = Math.min(n,@edge.curve.getLength()/10)
-    lotWidth = @edge.curve.getLength()/n
+    n = @edge.curve().getLength()/curveLength
+    n = Math.min(n,@edge.curve().getLength()/10)
+    lotWidth = @edge.curve().getLength()/n
     @lots = []
 
     for i in [0..n]
-      s = split @edge.curve, ((1/n)*i)
-      loc = @edge.curve.getNearestLocation(s.left.p3)
+      s = split @edge.curve(), ((1/n)*i)
+      loc = @edge.curve().getNearestLocation(s.left.p3)
 
-      point2 = @edge.curve.getPointAt(loc._parameter, true)
-      normal2 = @edge.curve.getNormalAt(loc._parameter, true)
-      tangent2 = @edge.curve.getTangentAt(loc._parameter, true)
+      point2 = @edge.curve().getPointAt(loc._parameter, true)
+      normal2 = @edge.curve().getNormalAt(loc._parameter, true)
+      tangent2 = @edge.curve().getTangentAt(loc._parameter, true)
 
       @modifier = @modifier * -1
       driveWay = @makeRect(point2, normal2, tangent2)
 
-      distanceToStart = P(point2).distance(@edge.curve.p0)
-      distanceToEnd = P(point2).distance(@edge.curve.p3)
+      distanceToStart = P(point2).distance(@edge.curve().p0)
+      distanceToEnd = P(point2).distance(@edge.curve().p3)
       unless distanceToStart < lotWidth/2 or distanceToEnd < lotWidth/2
         @rects.push driveWay
         @lots.push @makeLot driveWay, lotWidth
@@ -154,8 +157,8 @@ class LeafTool extends Tool
 
     height = 700/width
 
-    pp0 = @edge.curve.getNearestLocation(driveWay.p0.add(P(driveWay.tangent)))
-    pp1 = @edge.curve.getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)))
+    pp0 = @edge.curve().getNearestLocation(driveWay.p0.add(P(driveWay.tangent)))
+    pp1 = @edge.curve().getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)))
 
     p0 = P(pp0._point)
     p1 = P(pp1._point)
@@ -277,9 +280,9 @@ class EdgeTool extends Tool
     location = 
       point: orig
     for edge in ents.edges
-      nearestLocation = edge.curve.getNearestLocation(orig)
+      nearestLocation = edge.curve().getNearestLocation(orig)
       continue unless nearestLocation?
-      newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true))
+      newPoint = P(edge.curve().getPointAt(nearestLocation.parameter, true))
       dist = newPoint.distance(orig)
       continue if newPoint.distance(@handle.node.pos) < 10
       if dist < 10
@@ -365,11 +368,11 @@ class EdgeTool extends Tool
     # Find all intersections
     intersections = []
     for edge in ents.edges
-      for inter in curve.getIntersections(edge.curve)
+      for inter in curve.getIntersections(edge.curve())
         unless @intersectingPrevRoad(edge)
           inter.edge = edge
           inter.location = {}
-          inter.location.parameter = edge.curve.getParameterOf(inter._point)
+          inter.location.parameter = edge.curve().getParameterOf(inter._point)
           intersections.push inter
 
     snapPoint = @snap curve.p3
@@ -448,7 +451,7 @@ class EdgeTool extends Tool
       layers.tool.drawDot @curve.p1
       layers.tool.drawDot @curve.p2
       if @handle.inverse.edge?
-        layers.tool.drawRoad(@handle.inverse.edge, "rgba(255,30,30,0.5)")
+        layers.tool.drawEdge(@handle.inverse.edge, "rgba(255,30,30,0.5)")
 
 
 

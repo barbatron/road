@@ -15,11 +15,11 @@ req =
 
 r = requirejs
 r req[0], ->
-  class Point
+  class Point2
     constructor: (@x, @y) ->
 
     normalized: ->
-      v = new Point(@x, @y)
+      v = new Point2(@x, @y)
       v.normalize()
       v
 
@@ -46,10 +46,8 @@ r req[0], ->
       Math.acos theta
 
     pa: () ->
-      unless @pap?
-        @pap = new paper.Point(@x,@y)
-      return @pap
-
+      new paper.Point(@x,@y)
+    
     mirror: (line) ->
       papLine = new paper.Path.Line(line.p0.pa(), line.p1.pa())
       if line.p0 is line.p1
@@ -74,22 +72,22 @@ r req[0], ->
       @y *= length
 
     perp: ->
-      new Point(-@y, @x)
+      new Point2(-@y, @x)
 
     add: (other) ->
-      new Point(@x + other.x, @y + other.y)
+      new Point2(@x + other.x, @y + other.y)
 
     sub: (other) ->
-      return new Point(@x - other.x, @y - other.y)
+      return new Point2(@x - other.x, @y - other.y)
 
     sub: (other) ->
-      new Point(@x - other.x, @y - other.y)
+      new Point2(@x - other.x, @y - other.y)
 
     mult: (value) ->
-      new Point(@x * value, @y * value)
+      new Point2(@x * value, @y * value)
 
     div: (value) ->
-      new Point(@x / value, @y / value)
+      new Point2(@x / value, @y / value)
 
     distance: (p1) ->
       p2 = this
@@ -98,11 +96,11 @@ r req[0], ->
 
   root.P =  (x, y) ->
     if y?
-      p = new Point(x, y)
+      p = new Point2(x, y)
     else if x.y?
-      p = new Point(x.x, x.y)    
+      p = new Point2(x.x, x.y)    
     else
-      p = new Point(x.offsetX, x.offsetY)
+      p = new Point2(x.offsetX, x.offsetY)
     return p
 
   V = (len, ang) ->
@@ -110,7 +108,7 @@ r req[0], ->
       length: len
       angle: ang
     }
-    return new Point(pp.x, pp.y)
+    return new Point2(pp.x, pp.y)
 
   class Line
     constructor: (@p0, @p1) ->
@@ -341,3 +339,27 @@ r req[0], ->
     tally
 
 
+  root.classes.Point2 = Point2
+  root.classes.Line = Line
+  root.classes.Point = paper.Point
+  root.classes.Curve = paper.Curve
+
+  ###
+  all = {}
+  seen = ['window']
+  findAll = (obj) ->
+      for k, v of obj
+          if seen.indexOf(k) == -1
+              if v?.prototype?.constructor?.name?
+                  #seen.push v.prototype.constructor?.name
+                  all[v.prototype.constructor.name] = v.prototype
+              seen.push k
+              if v instanceof Object
+                  findAll(v)
+
+  findAll(paper)
+  for k,v of all
+    unless k == ''
+      root.classes[k] = v
+  delete root.classes['']
+  ###

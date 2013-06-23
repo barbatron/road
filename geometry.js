@@ -13,23 +13,23 @@
   r = requirejs;
 
   r(req[0], function() {
-    var Line, Point, V;
+    var Line, Point2, V;
 
-    Point = (function() {
-      function Point(x, y) {
+    Point2 = (function() {
+      function Point2(x, y) {
         this.x = x;
         this.y = y;
       }
 
-      Point.prototype.normalized = function() {
+      Point2.prototype.normalized = function() {
         var v;
 
-        v = new Point(this.x, this.y);
+        v = new Point2(this.x, this.y);
         v.normalize();
         return v;
       };
 
-      Point.prototype.normalize = function() {
+      Point2.prototype.normalize = function() {
         var length;
 
         length = this.length();
@@ -37,29 +37,26 @@
         return this.y /= length;
       };
 
-      Point.prototype.dot = function(p) {
+      Point2.prototype.dot = function(p) {
         return this.x * p.x + this.y * p.y;
       };
 
-      Point.prototype.cross = function(p) {
+      Point2.prototype.cross = function(p) {
         return this.x * p.y - this.y * p.x;
       };
 
-      Point.prototype.angle = function(p) {
+      Point2.prototype.angle = function(p) {
         var theta;
 
         theta = this.dot(p) / (this.length() * p.length());
         return Math.acos(theta);
       };
 
-      Point.prototype.pa = function() {
-        if (this.pap == null) {
-          this.pap = new paper.Point(this.x, this.y);
-        }
-        return this.pap;
+      Point2.prototype.pa = function() {
+        return new paper.Point(this.x, this.y);
       };
 
-      Point.prototype.mirror = function(line) {
+      Point2.prototype.mirror = function(line) {
         var p, papLine;
 
         papLine = new paper.Path.Line(line.p0.pa(), line.p1.pa());
@@ -73,45 +70,45 @@
         return P(p.x + (p.x - this.x), p.y + (p.y - this.y));
       };
 
-      Point.prototype.signedAngle = function(p) {
+      Point2.prototype.signedAngle = function(p) {
         return Math.atan2(this.perp().dot(p), this.dot(p));
       };
 
-      Point.prototype.length = function() {
+      Point2.prototype.length = function() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
       };
 
-      Point.prototype.setLength = function(length) {
+      Point2.prototype.setLength = function(length) {
         this.normalize();
         this.x *= length;
         return this.y *= length;
       };
 
-      Point.prototype.perp = function() {
-        return new Point(-this.y, this.x);
+      Point2.prototype.perp = function() {
+        return new Point2(-this.y, this.x);
       };
 
-      Point.prototype.add = function(other) {
-        return new Point(this.x + other.x, this.y + other.y);
+      Point2.prototype.add = function(other) {
+        return new Point2(this.x + other.x, this.y + other.y);
       };
 
-      Point.prototype.sub = function(other) {
-        return new Point(this.x - other.x, this.y - other.y);
+      Point2.prototype.sub = function(other) {
+        return new Point2(this.x - other.x, this.y - other.y);
       };
 
-      Point.prototype.sub = function(other) {
-        return new Point(this.x - other.x, this.y - other.y);
+      Point2.prototype.sub = function(other) {
+        return new Point2(this.x - other.x, this.y - other.y);
       };
 
-      Point.prototype.mult = function(value) {
-        return new Point(this.x * value, this.y * value);
+      Point2.prototype.mult = function(value) {
+        return new Point2(this.x * value, this.y * value);
       };
 
-      Point.prototype.div = function(value) {
-        return new Point(this.x / value, this.y / value);
+      Point2.prototype.div = function(value) {
+        return new Point2(this.x / value, this.y / value);
       };
 
-      Point.prototype.distance = function(p1) {
+      Point2.prototype.distance = function(p1) {
         var p2, v;
 
         p2 = this;
@@ -119,18 +116,18 @@
         return v.length();
       };
 
-      return Point;
+      return Point2;
 
     })();
     root.P = function(x, y) {
       var p;
 
       if (y != null) {
-        p = new Point(x, y);
+        p = new Point2(x, y);
       } else if (x.y != null) {
-        p = new Point(x.x, x.y);
+        p = new Point2(x.x, x.y);
       } else {
-        p = new Point(x.offsetX, x.offsetY);
+        p = new Point2(x.offsetX, x.offsetY);
       }
       return p;
     };
@@ -141,7 +138,7 @@
         length: len,
         angle: ang
       });
-      return new Point(pp.x, pp.y);
+      return new Point2(pp.x, pp.y);
     };
     Line = (function() {
       function Line(p0, p1) {
@@ -430,7 +427,7 @@
         }
       };
     };
-    return root.curveLen = function(c) {
+    root.curveLen = function(c) {
       var cur, curLoc, direction, dist, prev, tally;
 
       prev = c.getLocationAt(0.001, true).point;
@@ -448,6 +445,30 @@
       }
       return tally;
     };
+    root.classes.Point2 = Point2;
+    root.classes.Line = Line;
+    root.classes.Point = paper.Point;
+    return root.classes.Curve = paper.Curve;
+    /*
+    all = {}
+    seen = ['window']
+    findAll = (obj) ->
+        for k, v of obj
+            if seen.indexOf(k) == -1
+                if v?.prototype?.constructor?.name?
+                    #seen.push v.prototype.constructor?.name
+                    all[v.prototype.constructor.name] = v.prototype
+                seen.push k
+                if v instanceof Object
+                    findAll(v)
+    
+    findAll(paper)
+    for k,v of all
+      unless k == ''
+        root.classes[k] = v
+    delete root.classes['']
+    */
+
   });
 
 }).call(this);

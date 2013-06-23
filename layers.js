@@ -71,16 +71,16 @@
       return c.attr("fill", color);
     };
 
-    Layer.prototype.drawRoad = function(edge, color) {
+    Layer.prototype.drawEdge = function(edge, color) {
       var c, p, t;
 
       if (color == null) {
         color = "#777";
       }
-      c = this.ctx.path("M " + edge.curve.p0.x + " " + edge.curve.p0.y + "\nC " + edge.curve.p1.x + " " + edge.curve.p1.y + "\n  " + edge.curve.p2.x + " " + edge.curve.p2.y + "\n  " + edge.curve.p3.x + " " + edge.curve.p3.y);
+      c = this.ctx.path("M " + (edge.curve().p0.x) + " " + (edge.curve().p0.y) + "\nC " + (edge.curve().p1.x) + " " + (edge.curve().p1.y) + "\n  " + (edge.curve().p2.x) + " " + (edge.curve().p2.y) + "\n  " + (edge.curve().p3.x) + " " + (edge.curve().p3.y));
       c.attr("stroke-width", "6");
       c.attr("stroke", color);
-      p = edge.curve.getPointAt(0.5, true);
+      p = edge.curve().getPointAt(0.5, true);
       t = this.ctx.text(p.x, p.y, edge.id);
       return c;
     };
@@ -173,7 +173,7 @@
 
   root.layers = {};
 
-  _ref = ['main', 'node', 'tool', 'nodeSnap'];
+  _ref = ['main', 'node', 'tool', 'selection', 'nodeSnap'];
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     layer = _ref[_i];
     root.layers[layer] = new Layer(layer);

@@ -48,9 +48,15 @@
     function CommonTool() {
       CommonTool.__super__.constructor.call(this);
       layers.tool.clear();
+      this.selection = [];
     }
 
-    CommonTool.prototype.click = function() {};
+    CommonTool.prototype.click = function() {
+      if ((this.closestEdge != null) && _.indexOf(this.selection, this.closestEdge) === -1) {
+        this.selection.push(this.closestEdge);
+        return layers.selection.drawEdge(this.closestEdge, "rgba(255,255,0,0.4)");
+      }
+    };
 
     CommonTool.prototype.over = function(ent, e) {
       if (ent instanceof ents.Node) {
@@ -61,37 +67,35 @@
     CommonTool.prototype.move = function(e) {
       var dist, edge, edges, handle, nearestPoint, point, shortest, _i, _len, _ref;
 
-      if (this.node != null) {
-        point = P(e);
-        edges = [];
-        shortest = null;
-        layers.tool.clear();
-        _ref = this.node.handels;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          handle = _ref[_i];
-          edge = handle.edge;
-          if (edge != null) {
-            nearestPoint = edge.curve.getNearestPoint(point);
-            if (nearestPoint == null) {
-              break;
-            }
-            nearestPoint = P(nearestPoint);
-            dist = point.distance(nearestPoint);
-            layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)");
-            if (dist < shortest || (shortest == null)) {
-              shortest = dist;
-              this.closestEdge = edge;
-              if (edge.from.node === this.node) {
-                this.closestHandle = edge.from.inverse;
-              } else {
-                this.closestHandle = edge.to.inverse;
-              }
+      point = P(e);
+      edges = [];
+      shortest = null;
+      layers.tool.clear();
+      _ref = ents.handels;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        handle = _ref[_i];
+        edge = handle.edge;
+        if (edge != null) {
+          nearestPoint = edge.curve().getNearestPoint(point);
+          if (nearestPoint == null) {
+            break;
+          }
+          nearestPoint = P(nearestPoint);
+          dist = point.distance(nearestPoint);
+          layers.tool.drawDot(nearestPoint, "rgba(255,30,30,0.5)");
+          if (dist < shortest || (shortest == null)) {
+            shortest = dist;
+            this.closestEdge = edge;
+            if (edge.from.node === this.node) {
+              this.closestHandle = edge.from.inverse;
+            } else {
+              this.closestHandle = edge.to.inverse;
             }
           }
         }
-        if (this.closestEdge != null) {
-          return layers.tool.drawRoad(this.closestEdge, "rgba(255,30,30,0.5)");
-        }
+      }
+      if (this.closestEdge != null) {
+        return layers.tool.drawEdge(this.closestEdge, "rgba(255,30,30,0.5)");
       }
     };
 
@@ -115,7 +119,6 @@
         }
       };
       handler = keyBind[e.which];
-      console.log("handler? ", handler);
       return (_ref = keyBind[e.which]) != null ? _ref.call(this, e) : void 0;
     };
 
@@ -155,32 +158,32 @@
       var curve, curveLength, distanceToEnd, distanceToStart, driveWay, i, loc, lotWidth, n, nearestLoc, normal, normal2, point, point2, rect, s, tangent, tangent2, _i, _j, _len, _ref, _results;
 
       layers.tool.clear();
-      nearestLoc = this.edge.curve.getNearestLocation(P(e).pa());
+      nearestLoc = this.edge.curve().getNearestLocation(P(e).pa());
       if (nearestLoc == null) {
         return;
       }
-      point = this.edge.curve.getPointAt(nearestLoc._parameter, true);
-      normal = this.edge.curve.getNormalAt(nearestLoc._parameter, true);
-      tangent = this.edge.curve.getTangentAt(nearestLoc._parameter, true);
+      point = this.edge.curve().getPointAt(nearestLoc._parameter, true);
+      normal = this.edge.curve().getNormalAt(nearestLoc._parameter, true);
+      tangent = this.edge.curve().getTangentAt(nearestLoc._parameter, true);
       this.loc = nearestLoc;
       this.modifier = this.checkSide(P(e), P(point), normal);
       this.rects = [];
-      curve = C(split(this.edge.curve, nearestLoc._parameter).left);
+      curve = C(split(this.edge.curve(), nearestLoc._parameter).left);
       curveLength = curve.getLength();
-      n = this.edge.curve.getLength() / curveLength;
-      n = Math.min(n, this.edge.curve.getLength() / 10);
-      lotWidth = this.edge.curve.getLength() / n;
+      n = this.edge.curve().getLength() / curveLength;
+      n = Math.min(n, this.edge.curve().getLength() / 10);
+      lotWidth = this.edge.curve().getLength() / n;
       this.lots = [];
       for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
-        s = split(this.edge.curve, (1 / n) * i);
-        loc = this.edge.curve.getNearestLocation(s.left.p3);
-        point2 = this.edge.curve.getPointAt(loc._parameter, true);
-        normal2 = this.edge.curve.getNormalAt(loc._parameter, true);
-        tangent2 = this.edge.curve.getTangentAt(loc._parameter, true);
+        s = split(this.edge.curve(), (1 / n) * i);
+        loc = this.edge.curve().getNearestLocation(s.left.p3);
+        point2 = this.edge.curve().getPointAt(loc._parameter, true);
+        normal2 = this.edge.curve().getNormalAt(loc._parameter, true);
+        tangent2 = this.edge.curve().getTangentAt(loc._parameter, true);
         this.modifier = this.modifier * -1;
         driveWay = this.makeRect(point2, normal2, tangent2);
-        distanceToStart = P(point2).distance(this.edge.curve.p0);
-        distanceToEnd = P(point2).distance(this.edge.curve.p3);
+        distanceToStart = P(point2).distance(this.edge.curve().p0);
+        distanceToEnd = P(point2).distance(this.edge.curve().p3);
         if (!(distanceToStart < lotWidth / 2 || distanceToEnd < lotWidth / 2)) {
           this.rects.push(driveWay);
           this.lots.push(this.makeLot(driveWay, lotWidth));
@@ -244,8 +247,8 @@
       driveWay.tangent.length = width;
       driveWay.normal.length = width * 4;
       height = 700 / width;
-      pp0 = this.edge.curve.getNearestLocation(driveWay.p0.add(P(driveWay.tangent)));
-      pp1 = this.edge.curve.getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)));
+      pp0 = this.edge.curve().getNearestLocation(driveWay.p0.add(P(driveWay.tangent)));
+      pp1 = this.edge.curve().getNearestLocation(driveWay.p0.sub(P(driveWay.tangent)));
       p0 = P(pp0._point);
       p1 = P(pp1._point);
       p2 = P(pp1._point).add(P(pp1.getNormal().setLength(height * this.modifier)));
@@ -391,11 +394,11 @@
       _ref = ents.edges;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         edge = _ref[_i];
-        nearestLocation = edge.curve.getNearestLocation(orig);
+        nearestLocation = edge.curve().getNearestLocation(orig);
         if (nearestLocation == null) {
           continue;
         }
-        newPoint = P(edge.curve.getPointAt(nearestLocation.parameter, true));
+        newPoint = P(edge.curve().getPointAt(nearestLocation.parameter, true));
         dist = newPoint.distance(orig);
         if (newPoint.distance(this.handle.node.pos) < 10) {
           continue;
@@ -513,13 +516,13 @@
       _ref = ents.edges;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         edge = _ref[_i];
-        _ref1 = curve.getIntersections(edge.curve);
+        _ref1 = curve.getIntersections(edge.curve());
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           inter = _ref1[_j];
           if (!this.intersectingPrevRoad(edge)) {
             inter.edge = edge;
             inter.location = {};
-            inter.location.parameter = edge.curve.getParameterOf(inter._point);
+            inter.location.parameter = edge.curve().getParameterOf(inter._point);
             intersections.push(inter);
           }
         }
@@ -621,7 +624,7 @@
         layers.tool.drawDot(this.curve.p1);
         layers.tool.drawDot(this.curve.p2);
         if (this.handle.inverse.edge != null) {
-          return layers.tool.drawRoad(this.handle.inverse.edge, "rgba(255,30,30,0.5)");
+          return layers.tool.drawEdge(this.handle.inverse.edge, "rgba(255,30,30,0.5)");
         }
       }
     };

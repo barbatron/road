@@ -1,10 +1,13 @@
 root = this
 
+root.classes = {}
+
 req = 
   0: [
     'geometry'
     'paper'
     'tools'
+    'cycle'
     'entities'
   ]
   1:[
@@ -16,6 +19,7 @@ req =
 
 r = requirejs
 r req[0], ->
+
 
   #root.P = (x,y)->
   #  new paper.Point(x,y)

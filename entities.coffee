@@ -1,21 +1,8 @@
 root = this
 
-
-redrawAll = () ->
-  layers.main.clear()
-  entityTypes = [ents.edges, ents.nodes, ents.handels]
-  for entityType in entityTypes
-    for ent in entityType
-      ent.draw()
-
-
-
-all = {}
-
 class Entity
   constructor: () ->
     @id = _.uniqueId()
-    all[@id] = this
 
 class Node extends Entity
   constructor: (@pos, target=null) ->
@@ -73,7 +60,7 @@ class Edge extends Entity
   defaults =
     color: "#777"
     width: 7
-  constructor: (@from, @to, @curve) ->
+  constructor: (@from, @to) ->
     super()
     @opt = _.defaults(defaults)
     @line = L(@from.node.pos,@to.node.pos)
@@ -94,7 +81,13 @@ class Edge extends Entity
     else
       return false
   draw: () ->
-    layers.main.drawRoad(this)
+    layers.main.drawEdge(this)
+  curve: () ->
+    curve = C
+      p0: @from.node.pos
+      p1: @from.pos
+      p2: @to.pos
+      p3: @to.node.pos
 
 class Leaf extends Entity
   constructor: (@edge, @rect, @loc) ->
@@ -121,12 +114,12 @@ makeRoad = (oldHandle, curve, newNode=null, continous) ->
     prevHandle = oldHandle
   else
     prevHandle = new Handle(oldHandle.node, curve.p1)
-  new Edge(prevHandle, newHandle, curve)
+  new Edge(prevHandle, newHandle)
   return newHandle.inverse
 
 splitRoad = (intersection) ->
   edgeToSplit = intersection.edge
-  curveToSplit = intersection.edge.curve
+  curveToSplit = intersection.edge.curve()
   curves = split curveToSplit, intersection.location.parameter
 
 
@@ -144,14 +137,14 @@ splitRoad = (intersection) ->
     p1: curves.left.p2
     p2: handleIn.pos
     p3: newNode.pos
-  new Edge(edgeToSplit.from, handleIn, curve)
+  new Edge(edgeToSplit.from, handleIn)
 
   curve = C
     p0: newNode.pos
     p1: handleOut.pos
     p2: curves.right.p1
     p3: edgeToSplit.to.node.pos
-  new Edge(handleOut, edgeToSplit.to, curve)
+  new Edge(handleOut, edgeToSplit.to)
 
   edgeToSplit.destroy()
 
@@ -167,6 +160,49 @@ root.test = () ->
   console.log split(c,0.5)
 
 
+root.entTypes = 
+  "Edge": "edges"
+  "Node": "nodes"
+  "Handle": "handels"
+
+
+root.saveAll = () ->
+  localStorage.all = JSON.stringify JSON.decycle root.ents.all()
+
+root.redrawAll = () ->
+  layers.main.clear()
+  entityTypes = [ents.edges, ents.nodes, ents.handels]
+  for entityType in entityTypes
+    for ent in entityType
+      console.log ent
+      ent.draw()
+
+root.loadAll = () ->
+  #res = new Resurrect()
+  #ents = _.extend ents, res.resurrect localStorage.all
+  stored = JSON.retrocycle((JSON.parse localStorage.all), root.classes)
+  console.log stored
+  seen = []
+  find = (obj, namespace) ->
+    console.log namespace
+    for k, v of obj
+      continue unless v?
+      if seen.indexOf(v) == -1
+        seen.push v
+      else
+        continue
+      if v?.___const? and root.classes[v.___const]? and v.___const isnt "Object"
+        v.__proto__ = root.classes[v.___const].prototype
+        v.constructor = root.classes[v.___const].prototype.constructor 
+        console.log "Added prototype for  "+ v.___const
+        #delete v.___const
+      if _.isObject v
+        find(v, namespace+"."+k)
+  for type,arr of stored
+    ents[entTypes[type]] = arr
+  #  for ent in arr
+  #    ent.__proto__ = ents[type].prototype
+  redrawAll()
 
 root.ents = {}
 root.ents.makeRoad = makeRoad
@@ -176,10 +212,22 @@ root.ents.Handle = Handle
 root.ents.Edge = Edge
 root.ents.Leaf = Leaf
 root.ents.Lot = Lot
-root.ents.edges = []
-root.ents.nodes = []
-root.ents.handels = []
-root.ents.all = all
+root.classes.Entity = Entity
+root.classes.Node =  Node
+root.classes.Handle = Handle
+root.classes.Edge = Edge
+root.classes.Leaf = Leaf
+root.classes.Lot = Lot
+
+for k,v of entTypes
+  root.ents[v] = []
+
+root.ents.all = () ->
+  obj = {}
+  for k,v of entTypes
+    obj[k] = root.ents[v]
+  return obj
+
 
 root.validateEdgeIntegrity = ->
   for edge in ents.edges

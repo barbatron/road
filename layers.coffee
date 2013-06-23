@@ -51,17 +51,17 @@ class Layer
     c = @ctx.circle(pos.x, pos.y, 4)
     c.attr("fill", color);
     
-  drawRoad: (edge, color="#777") ->
+  drawEdge: (edge, color="#777") ->
     c = @ctx.path """
-      M #{edge.curve.p0.x} #{edge.curve.p0.y}
-      C #{edge.curve.p1.x} #{edge.curve.p1.y}
-        #{edge.curve.p2.x} #{edge.curve.p2.y}
-        #{edge.curve.p3.x} #{edge.curve.p3.y}
+      M #{edge.curve().p0.x} #{edge.curve().p0.y}
+      C #{edge.curve().p1.x} #{edge.curve().p1.y}
+        #{edge.curve().p2.x} #{edge.curve().p2.y}
+        #{edge.curve().p3.x} #{edge.curve().p3.y}
       """
     c.attr "stroke-width", "6"
     c.attr "stroke", color
 
-    p = edge.curve.getPointAt(0.5, true)
+    p = edge.curve().getPointAt(0.5, true)
     t = @ctx.text(p.x, p.y, edge.id);
 
     return c
@@ -126,7 +126,7 @@ class Layer
 
 
 root.layers = {}
-for layer in ['main','node','tool','nodeSnap']
+for layer in ['main','node','tool','selection','nodeSnap' ]
   root.layers[layer] = new Layer(layer)
 
 class PaperLayer
