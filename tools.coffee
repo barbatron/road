@@ -288,9 +288,35 @@ class FreeEdgeTool extends Tool
     layers.tool.drawLine(@line, 
       if @valid then "rgba(0,255,128,0.5)" else "rgba(255,128,128,0.5)")
 
+class ContinousEdgeTool extends Tool
+  # Projection forward - Edge
+  # Dont snap to origin node - Edge
+  # Symetical cubic beizers - Edge
+  # Should snap to closes curves - Edge
+  # Dont bend more than 45 degrees - Edge
+  # Minimum 15 m radius - Edge
+  # Should not intersect other roads - Edge
+  # Abfharts should however be allowed - Edge/Node
+  # Snapped and intersected edges should be cut - Factory
+  # No edges closer than 20 meters to nodes (unless they are connected to those nodes) - Node
+  # Snap to edge or node if this close - Edge/Node
+  # No loops - Edge
+  # No edges shorter than 20 meters - Edge
+  # No double connections between nodes  - Edge/Node
+
+  constructor: (@handle) ->
+    super()
+
+  move: (e) ->
+
+
+
+
 class EdgeTool extends Tool
   constructor: (@handle) ->
     super()
+
+
     if @handle.edge?
       unless @handle.inverse.edge?
         @handle = @handle.inverse 
@@ -327,7 +353,7 @@ class EdgeTool extends Tool
       @endNode = null
 
   move: (e) ->
-    # Check if distance to end node is too far away
+    # Check if distance to end node is too close
     if @endNode?
       if L(@endNode.pos, P(e)).length() > 10
         @endNode = null

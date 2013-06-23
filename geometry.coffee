@@ -51,9 +51,7 @@ r req[0], ->
     mirror: (line) ->
       papLine = new paper.Path.Line(line.p0.pa(), line.p1.pa())
       if line.p0 is line.p1
-        console.log "line", line
-        console.log "papline", papLine
-
+                
       p = papLine.getNearestPoint(@pa())
       layers.tool.clear()
       layers.tool.drawDot p, "#000"
@@ -246,8 +244,7 @@ r req[0], ->
     starg = theOtherHolyThing.growAdd(theHolyFactor).p1
     mid = handle.node.pos.add(end).div(2)
     perp = L(handle.node.pos, end).perp().growAll(1000)
-    console.log starg, perp
-    etarg = starg.mirror(perp)
+        etarg = starg.mirror(perp)
     layers.tool.drawDot starg, "#0F0"
     layers.tool.drawDot mid, "#00F"
     layers.tool.drawLine perp, "#0FF"
@@ -265,8 +262,7 @@ r req[0], ->
       p1: P(0,5)
       p2: P(10,5)
       p3: P(10,0)
-    #console.log JSON.stringify root.split c.pointsArr, 0.5
-
+    #
 
   root.bezier = (pts) ->
     (t) ->
@@ -320,20 +316,16 @@ r req[0], ->
     }
 
   root.curveLen = (c) ->
-    #console.log "curve", c.p0, c.p3
-    prev = c.getLocationAt(0.001, true).point
+    #    prev = c.getLocationAt(0.001, true).point
     tally = 0
     curLoc = 0
     direction = 1
     cur = null
     while curLoc < 1
       curLoc += 0.10 * direction
-      #console.log "curloc", curLoc
-      cur = c.getLocationAt(curLoc, true).point
-      #console.log cur, prev
-      dist = cur.getDistance(prev)
-      #console.log "dist", dist
-      layers.tool.drawDot cur
+      #      cur = c.getLocationAt(curLoc, true).point
+      #      dist = cur.getDistance(prev)
+      #      layers.tool.drawDot cur
       tally += dist
       prev = cur
     tally

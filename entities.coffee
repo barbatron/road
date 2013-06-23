@@ -42,7 +42,7 @@ class Node extends Entity
         return handle
     if @handles < 5
       return @makeHandle()
-    
+
 
 class Handle extends Entity
   constructor: (@node, @pos, @inverse = null) ->
